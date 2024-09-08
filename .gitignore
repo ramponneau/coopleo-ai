@@ -1,0 +1,5 @@
+.env
+.env.local
+*.ipynb
+*.pem
+node_modules
