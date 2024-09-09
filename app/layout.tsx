@@ -1,28 +1,24 @@
-import './globals.css'
-import type { Metadata } from 'next'
-import Link from 'next/link'
+import type { Metadata } from "next";
+import "./globals.css";
+import Navbar from "@/components/Navbar";
+import { inter } from './fonts'
 
 export const metadata: Metadata = {
-  title: 'Coopleo AI',
-  description: 'AI-powered therapy application',
-}
+  title: "Coopleo",
+  description: "AI relationship advisor for couples",
+};
 
 export default function RootLayout({
   children,
-}: {
-  children: React.ReactNode
-}) {
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.className}>
       <body>
-        <nav className="bg-gray-800 text-white p-4">
-          <ul className="flex space-x-4">
-            <li><Link href="/">Home</Link></li>
-            <li><Link href="/chat">AI Therapist Chat</Link></li>
-          </ul>
-        </nav>
+        <Navbar />
         {children}
       </body>
     </html>
-  )
+  );
 }

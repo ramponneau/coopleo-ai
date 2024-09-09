@@ -1,23 +1,44 @@
-import { NextResponse } from 'next/server'
-import Anthropic from '@anthropic-ai/sdk'
+import { NextRequest, NextResponse } from 'next/server'
 
-const anthropic = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-})
-
-export async function POST(req: Request) {
-  const { message } = await req.json()
-
+export async function POST(req: NextRequest) {
   try {
-    const response = await anthropic.completions.create({
-      model: "claude-2",
-      max_tokens_to_sample: 300,
-      prompt: `Human: ${message}\n\nAssistant: `,
+    const body = await req.json()
+    console.log('Received request body:', body)
+
+    const response = await fetch(`http://localhost:5000/chat?t=${Date.now()}`, {  // Add timestamp to URL
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+      body: JSON.stringify(body),
     })
 
-    return NextResponse.json({ response: response.completion })
+    if (!response.ok) {
+      const errorData = await response.json()
+      console.error('Error response from Python API:', errorData)
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`)
+    }
+
+    const data = await response.json()
+    console.log('Received response from Python API:', data)
+    
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+      },
+    })
   } catch (error) {
-    console.error('Error:', error)
-    return NextResponse.json({ error: 'An error occurred while processing your request.' }, { status: 500 })
+    console.error('Error in chat API:', error)
+    return new NextResponse(
+      JSON.stringify({ error: 'Error communicating with AI service', details: (error as Error).message }),
+      { status: 500, headers: { 'Content-Type': 'application/json' } }
+    )
   }
 }

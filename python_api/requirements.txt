@@ -1,0 +1,7 @@
+flask
+langchain
+langchain-community
+langchain-anthropic
+anthropic
+flask-cors
+python-dotenv

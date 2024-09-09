@@ -3,3 +3,5 @@
 *.ipynb
 *.pem
 node_modules
+.next
+venv
