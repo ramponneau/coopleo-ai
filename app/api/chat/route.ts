@@ -1,44 +1,53 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    console.log('Received request body:', body)
+    console.log('Received POST request to /api/chat');
+    const body = await req.json();
+    console.log('Request body:', body);
 
-    const response = await fetch(`http://localhost:5000/chat?t=${Date.now()}`, {  // Add timestamp to URL
+    let payload = { 
+      message: body.message, 
+      isInitialContext: body.isInitialContext || false 
+    };
+
+    console.log('Sending payload to Flask server:', payload);
+
+    const response = await fetch('http://localhost:5000/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
       },
-      body: JSON.stringify(body),
-    })
+      body: JSON.stringify(payload),
+    });
 
     if (!response.ok) {
-      const errorData = await response.json()
-      console.error('Error response from Python API:', errorData)
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorData.error}`)
+      const errorText = await response.text();
+      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
-    const data = await response.json()
-    console.log('Received response from Python API:', data)
-    
-    return new NextResponse(JSON.stringify(data), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        'Pragma': 'no-cache',
-        'Expires': '0',
-      },
-    })
+    const data = await response.json();
+    console.log('Received response from Flask server:', data);
+
+    return NextResponse.json(data);
+  } catch (error: any) {
+    console.error('Error in POST /api/chat:', error);
+    return NextResponse.json({ error: error.message || 'An error occurred processing your request' }, { status: 500 });
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const response = await fetch('http://localhost:5000/reset', { method: 'POST' });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return NextResponse.json(data);
   } catch (error) {
-    console.error('Error in chat API:', error)
-    return new NextResponse(
-      JSON.stringify({ error: 'Error communicating with AI service', details: (error as Error).message }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    console.error('Error in DELETE /api/chat:', error);
+    return NextResponse.json({ error: 'An error occurred resetting the conversation' }, { status: 500 });
   }
 }

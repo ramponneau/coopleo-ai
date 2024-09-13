@@ -28,15 +28,12 @@
         "./*"
       ]
     },
-    "typeRoots": [
-      "./node_modules/@types",
-      "./types"
-    ]
+    "baseUrl": "."
   },
   "include": [
+    "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    "types/**/*.d.ts",
     ".next/types/**/*.ts"
   ],
   "exclude": [
