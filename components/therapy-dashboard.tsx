@@ -18,6 +18,7 @@ export function TherapyDashboard() {
   const searchParams = useSearchParams()
   const router = useRouter()
   const initialContextSentRef = useRef(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
     if (isTyping) return
@@ -73,7 +74,6 @@ export function TherapyDashboard() {
           console.log('Initial response:', initialResponse);
           
           initialContextSentRef.current = true;
-          // Only set the assistant's response, not the user's initial context
           setMessages([{ role: 'assistant', content: initialResponse }]);
         } catch (error) {
           console.error('Error parsing context:', error);
@@ -113,6 +113,25 @@ export function TherapyDashboard() {
       if (inputMessage.trim()) handleSendMessage(inputMessage)
     }
   }
+
+  const formatMessage = (content: string, isAIResponse: boolean) => {
+    if (!isAIResponse) {
+      return content;
+    }
+    // Preserve line breaks and ensure bullet points and numbered lists start on new lines
+    return content
+      .replace(/(?:^|\n)(\d+\.|\-|\•)\s/gm, '\n$1 ')  // Remove extra line break before numbered lists and bullet points
+      .replace(/\n{3,}/g, '\n\n')  // Remove excess line breaks
+      .trim();  // Remove leading and trailing whitespace
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
+
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
 
   return (
     <div className="flex flex-col h-screen bg-background">
@@ -154,7 +173,18 @@ export function TherapyDashboard() {
                   "rounded-lg p-3 text-sm shadow-sm",
                   msg.role === 'user' ? "bg-primary text-primary-foreground ml-12" : "bg-muted text-muted-foreground mr-12"
                 )}>
-                  <ReactMarkdown>{msg.content}</ReactMarkdown>
+                  <ReactMarkdown 
+                    className="whitespace-pre-wrap leading-tight"
+                    components={{
+                      strong: ({node, ...props}) => <span className="font-semibold" {...props} />,
+                      li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                      ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
+                      ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
+                      p: ({node, ...props}) => <p {...props} />
+                    }}
+                  >
+                    {formatMessage(msg.content, msg.role === 'assistant')}
+                  </ReactMarkdown>
                 </div>
                 {msg.role === 'user' && (
                   <Avatar className="w-8 h-8 overflow-hidden">
@@ -175,6 +205,7 @@ export function TherapyDashboard() {
                 </div>
               </div>
             )}
+            <div ref={messagesEndRef} /> {/* Add this line */}
           </div>
         </ScrollArea>
       </div>

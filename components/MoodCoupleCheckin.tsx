@@ -40,6 +40,7 @@ export function MoodCoupleCheckin() {
   const [mood, setMood] = useState('');
   const [location, setLocation] = useState('');
   const [topic, setTopic] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async () => {
@@ -47,6 +48,8 @@ export function MoodCoupleCheckin() {
       alert("Please select all options before proceeding.");
       return;
     }
+
+    setIsLoading(true);
 
     const initialContext = {
       state: states.find(s => s.icon === state)?.label || '',
@@ -69,7 +72,6 @@ export function MoodCoupleCheckin() {
       const data = await response.json();
       console.log('Initial context sent, response:', data);
 
-      // Encode the initial context and the response for the URL
       const encodedContext = encodeURIComponent(JSON.stringify({
         initialContext,
         initialResponse: data.response
@@ -80,6 +82,7 @@ export function MoodCoupleCheckin() {
     } catch (error) {
       console.error('Error sending initial context:', error);
       alert('An error occurred. Please try again.');
+      setIsLoading(false);
     }
   };
 
@@ -139,7 +142,7 @@ export function MoodCoupleCheckin() {
           
           <div className="space-y-8 sm:space-y-10 text-center">
             <div>
-              <p className="text-base sm:text-lg mb-4 sm:mb-6">How would you describe the current state of your relationship?</p>
+              <p className="text-base sm:text-lg mb-4 sm:mb-6">How is the current state of your relationship?</p>
               <div className="flex justify-center items-center space-x-4 sm:space-x-6">
                 {states.map((s) => (
                   <IconButton key={s.icon} item={s} selected={state === s.icon} onClick={setState} />
@@ -193,9 +196,21 @@ export function MoodCoupleCheckin() {
           <div className="flex justify-center mt-10 sm:mt-12">
             <Button
               onClick={handleSubmit}
-              className="bg-black text-white hover:bg-gray-800 hover:scale-105 transition-all duration-200 w-full max-w-sm py-4 sm:py-6 text-base sm:text-lg rounded-full"
+              disabled={isLoading}
+              className={`
+                bg-black text-white hover:bg-gray-800 hover:scale-105 transition-all duration-200 
+                w-full max-w-sm py-4 sm:py-6 text-base sm:text-lg rounded-full
+                ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+              `}
             >
-              Get recommendation
+              {isLoading ? (
+                <div className="flex items-center justify-center">
+                  <LoaderIcon className="animate-spin mr-2" />
+                  Getting recommendation...
+                </div>
+              ) : (
+                'Get recommendation'
+              )}
             </Button>
           </div>
         </div>
@@ -221,6 +236,32 @@ function InfoIcon(props: React.SVGProps<SVGSVGElement>) {
       <circle cx="12" cy="12" r="10" />
       <path d="M12 16v-4" />
       <path d="M12 8h.01" />
+    </svg>
+  )
+}
+
+function LoaderIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <line x1="12" y1="2" x2="12" y2="6" />
+      <line x1="12" y1="18" x2="12" y2="22" />
+      <line x1="4.93" y1="4.93" x2="7.76" y2="7.76" />
+      <line x1="16.24" y1="16.24" x2="19.07" y2="19.07" />
+      <line x1="2" y1="12" x2="6" y2="12" />
+      <line x1="18" y1="12" x2="22" y2="12" />
+      <line x1="4.93" y1="19.07" x2="7.76" y2="16.24" />
+      <line x1="16.24" y1="7.76" x2="19.07" y2="4.93" />
     </svg>
   )
 }
