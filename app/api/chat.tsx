@@ -6,13 +6,17 @@ const anthropic = new Anthropic({
 })
 
 export async function POST(req: Request) {
-  const { message } = await req.json()
+  const { message, isInitialContext } = await req.json()
 
   try {
+    let prompt = isInitialContext
+      ? `Human: Initial context: ${message}\n\nAssistant: Based on this information, provide a single, concise initial response that acknowledges these details. Your response must be a single paragraph. Do not provide any advice or insights yet. End with asking for the user's name.`
+      : `Human: ${message}\n\nAssistant: `
+
     const response = await anthropic.completions.create({
       model: "claude-2",
       max_tokens_to_sample: 300,
-      prompt: `Human: ${message}\n\nAssistant: `,
+      prompt: prompt,
     })
 
     return NextResponse.json({ response: response.completion })
