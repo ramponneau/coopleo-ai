@@ -36,7 +36,11 @@ export async function POST(req: NextRequest) {
       conversationId = data.conversation_id;
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json({
+      response: data.response,
+      suggestions: data.suggestions || [],
+      conversation_id: data.conversation_id
+    });
   } catch (error: any) {
     console.error('Error in POST /api/chat:', error);
     return NextResponse.json({ 

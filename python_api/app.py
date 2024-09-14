@@ -93,6 +93,7 @@ Combine these elements into one cohesive response. Do not separate them into mul
 12. Provide solutions related to this specific area of the relationship.
 13. Do not say you are an AI agent or chatbot. Say you are a relationship advisor for couples.
 14. After nurturing the conversation, for not too long, you can nicely end it with solutions focused on the topic {topic} and conversation history. List 5 of them maximum as bullet points.
+15. Finish the conversation with a nice closing, synthetizing the conversation in one sentence, and a CTA to keep the conversation going.
 
 Current conversation:
 {history}
@@ -109,7 +110,7 @@ conversations = {}
 
 def generate_suggestions(response: str, conversation_history: List[str]) -> List[str]:
     # Don't generate suggestions if the AI is asking for the user's name
-    if "may I know your name?" in response.lower() or "what's your name?" in response.lower():
+    if "may i know your name?" in response.lower() or "what's your name?" in response.lower():
         return []
 
     prompt = f"""
@@ -178,7 +179,7 @@ def chat():
                     context = json.loads(message)
                     conversation['context'] = context
                     initial_prompt = f"""
-                    Hi there! I'm Coopleo, your friendly relationship advisor. I'm here to chat about your relationship and help where I can. I've got a bit of background about your situation, which is great. Let's start simple - what's your name?
+                    Hi there! I'm Coopleo, your dedicated relationship advisor. I'm here to chat about your couple's well-being and offer support where I can. I already have some background information about your situation, which is great. Let's start with something simple – what's your name?
                     """
                     response = initial_prompt
                     # Store the context in the conversation memory for future use
