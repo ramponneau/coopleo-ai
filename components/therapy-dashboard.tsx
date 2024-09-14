@@ -19,12 +19,14 @@ export function TherapyDashboard() {
   const router = useRouter()
   const initialContextSentRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
     if (isTyping) return
     if (isInitialContext && initialContextSentRef.current) return
 
     setIsTyping(true)
+    setSuggestions([])
     if (!isInitialContext) {
       setMessages(prev => [...prev, { role: 'user', content: message }])
       setInputMessage('')
@@ -41,19 +43,17 @@ export function TherapyDashboard() {
       if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
 
       const data = await response.json()
-      if (data.error) throw new Error(data.error)
-
       console.log('Received response:', data);
 
-      if (!isInitialContext) {
+      if (data.response) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
       }
-      return data.response
+      if (data.suggestions) {
+        setSuggestions(data.suggestions)
+      }
     } catch (error: any) {
       console.error('Error sending message:', error)
-      if (!isInitialContext) {
-        setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }])
-      }
+      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }])
     } finally {
       setIsTyping(false)
     }
@@ -74,7 +74,14 @@ export function TherapyDashboard() {
           console.log('Initial response:', initialResponse);
           
           initialContextSentRef.current = true;
-          setMessages([{ role: 'assistant', content: initialResponse }]);
+          if (initialResponse) {
+            setMessages([{ role: 'assistant', content: initialResponse }]);
+            // Fetch auto-reply suggestions for the initial response
+            fetchAutoReplySuggestions(initialResponse);
+          } else {
+            console.error('Initial response is missing or undefined');
+            handleSendMessage(JSON.stringify(initialContext), true);
+          }
         } catch (error) {
           console.error('Error parsing context:', error);
         }
@@ -85,7 +92,25 @@ export function TherapyDashboard() {
     };
 
     loadInitialContext();
-  }, [searchParams]);
+  }, [searchParams, handleSendMessage]);
+
+  const fetchAutoReplySuggestions = async (message: string) => {
+    try {
+      const response = await fetch('/api/auto-reply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ input: message }),
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSuggestions(data.suggestions);
+      } else {
+        console.error('Error fetching auto-reply suggestions:', await response.text());
+      }
+    } catch (error) {
+      console.error('Error fetching auto-reply suggestions:', error);
+    }
+  };
 
   const handleDeleteHistory = async () => {
     setMessages([])
@@ -114,7 +139,8 @@ export function TherapyDashboard() {
     }
   }
 
-  const formatMessage = (content: string, isAIResponse: boolean) => {
+  const formatMessage = (content: string | undefined, isAIResponse: boolean) => {
+    if (!content) return ''; // Return an empty string if content is undefined
     if (!isAIResponse) {
       return content;
     }
@@ -133,9 +159,29 @@ export function TherapyDashboard() {
     scrollToBottom()
   }, [messages])
 
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value
+    setInputMessage(value)
+
+    if (value.length > 10) {  // Only generate suggestions after 10 characters
+      fetchAutoReplySuggestions(value);
+    } else {
+      setSuggestions([])
+    }
+  }, [])
+
+  const isAskingForName = (message: string | undefined) => {
+    if (!message) return false;
+    const lowerCaseMessage = message.toLowerCase();
+    return lowerCaseMessage.includes("what's your name") || 
+           lowerCaseMessage.includes("what is your name") ||
+           lowerCaseMessage.includes("may i know your name") ||
+           lowerCaseMessage.includes("could you tell me your name");
+  };
+
   return (
-    <div className="flex flex-col h-screen bg-background">
-      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-card">
+    <div className="flex flex-col h-screen bg-white">
+      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white">
         <button onClick={() => window.location.href = '/'} className="flex items-center">
           <Image 
             src="/coopleo-logo.svg" 
@@ -159,38 +205,54 @@ export function TherapyDashboard() {
         <ScrollArea className="h-full px-4 py-6">
           <div className="space-y-6">
             {messages.map((msg, index) => (
-              <div key={index} className={cn(
-                "flex items-start gap-3",
-                msg.role === 'user' ? "justify-end" : "justify-start"
-              )}>
-                {msg.role === 'assistant' && (
-                  <Avatar className="w-8 h-8 overflow-hidden bg-white">
-                    <AvatarImage src="/ai-avatar.svg" alt="Coopleo" className="p-1" />
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                )}
+              <div key={index} className="space-y-2">
                 <div className={cn(
-                  "rounded-lg p-3 text-sm shadow-sm",
-                  msg.role === 'user' ? "bg-primary text-primary-foreground ml-12" : "bg-muted text-muted-foreground mr-12"
+                  "flex items-center gap-3",
+                  msg.role === 'user' ? "justify-end" : "justify-start"
                 )}>
-                  <ReactMarkdown 
-                    className="whitespace-pre-wrap leading-tight"
-                    components={{
-                      strong: ({node, ...props}) => <span className="font-semibold" {...props} />,
-                      li: ({node, ...props}) => <li className="ml-4" {...props} />,
-                      ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
-                      ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
-                      p: ({node, ...props}) => <p {...props} />
-                    }}
-                  >
-                    {formatMessage(msg.content, msg.role === 'assistant')}
-                  </ReactMarkdown>
+                  {msg.role === 'assistant' && (
+                    <Avatar className="w-8 h-8 overflow-hidden bg-white flex-shrink-0 border border-gray-200 rounded-full">
+                      <AvatarImage src="/ai-avatar.svg" alt="Coopleo" className="p-1" />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  )}
+                  <div className={cn(
+                    "rounded-lg p-3 text-sm shadow-sm max-w-[80%]",
+                    msg.role === 'user' ? "bg-black text-white" : "bg-gray-100 text-black"
+                  )}>
+                    <ReactMarkdown 
+                      className="whitespace-pre-wrap leading-tight"
+                      components={{
+                        strong: ({node, ...props}) => <span className="font-semibold" {...props} />,
+                        li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                        ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
+                        ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
+                        p: ({node, ...props}) => <p {...props} />
+                      }}
+                    >
+                      {formatMessage(msg.content, msg.role === 'assistant')}
+                    </ReactMarkdown>
+                  </div>
+                  {msg.role === 'user' && (
+                    <Avatar className="w-8 h-8 overflow-hidden flex-shrink-0 border border-gray-200 rounded-full">
+                      <AvatarImage src="/placeholder-user.jpg" alt="User" className="object-cover" />
+                      <AvatarFallback>U</AvatarFallback>
+                    </Avatar>
+                  )}
                 </div>
-                {msg.role === 'user' && (
-                  <Avatar className="w-8 h-8 overflow-hidden">
-                    <AvatarImage src="/placeholder-user.jpg" alt="User" className="object-cover" />
-                    <AvatarFallback>U</AvatarFallback>
-                  </Avatar>
+                {msg.role === 'assistant' && index === messages.length - 1 && suggestions.length > 0 && (
+                  <div className="flex flex-col gap-2 mt-2 ml-11 max-w-[80%]">
+                    {suggestions.map((suggestion, sugIndex) => (
+                      <button
+                        key={sugIndex}
+                        onClick={() => handleSendMessage(suggestion)}
+                        className="flex items-center justify-between text-left text-sm bg-gray-100 text-black font-semibold py-1 px-3 rounded-full transition-colors duration-200 hover:bg-gray-200 w-full"
+                      >
+                        <span className="truncate">{suggestion}</span>
+                        <ArrowIcon className="h-4 w-4 ml-2 flex-shrink-0" />
+                      </button>
+                    ))}
+                  </div>
                 )}
               </div>
             ))}
@@ -205,18 +267,18 @@ export function TherapyDashboard() {
                 </div>
               </div>
             )}
-            <div ref={messagesEndRef} /> {/* Add this line */}
+            <div ref={messagesEndRef} />
           </div>
         </ScrollArea>
       </div>
-      <div className="p-4 bg-card">
+      <div className="p-4 bg-white">
         <form onSubmit={(e) => {
           e.preventDefault()
           if (inputMessage.trim()) handleSendMessage(inputMessage)
         }} className="relative">
           <Textarea
             value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
+            onChange={handleInputChange}
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
             className="min-h-[48px] w-full rounded-2xl resize-none py-3 px-4 pr-12 border border-neutral-400 shadow-sm"
@@ -269,6 +331,27 @@ function ReloadIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
       <path d="M3 21v-5h5" />
+    </svg>
+  )
+}
+
+function ArrowIcon(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      {...props}
+    >
+      <path
+        d="M13.5 4.5L21 12M21 12L13.5 19.5M21 12H3"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </svg>
   )
 }

@@ -26,14 +26,12 @@ export async function POST(req: NextRequest) {
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Flask server error response:', errorText);
       throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
     }
 
     const data = await response.json();
     console.log('Received response from Flask server:', data);
 
-    // Update the conversation ID if it's provided in the response
     if (data.conversation_id) {
       conversationId = data.conversation_id;
     }
