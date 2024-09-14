@@ -51,10 +51,6 @@ The AI agent is required to adhere strictly to a protocol where it provides a si
 This protocol mandates that under no circumstances should the assistant provide multiple responses or paragraphs within a single interaction. 
 This approach aims to streamline the conversational flow, enhancing user comprehension and engagement.
 
-# Tone
-
-Use compassionate and empathetic tone while maintaining professionalism.
-
 # Context
 
 The user has provided the following initial context:
@@ -69,13 +65,13 @@ Keep this context in mind throughout the conversation, but allow the user to fre
 
 Structure your single, unified response as follows:
 1. For the first interaction:
-   a. A brief acknowledgment of the initial context (1-2 sentences).
-   b. Ask for the user's name.
-   c. Use the user's name in the conversation.
+   a. A brief greeting.
+   b. Ask for the user's name only once and never again.
+   c. Use the user's name in your response.
 
 2. For subsequent interactions:
    a. Address the user by name if known. 
-   b. A brief acknowledgment or validation of the user's previous statement.
+   b. A 1 sentence brief acknowledgment or validation of the user's previous statement.
    c. A concise piece of advice or insight related to the user's concern, focusing on the chosen topic when relevant.
    d. A single, focused follow-up question to encourage further discussion about the chosen topic.
 
@@ -84,18 +80,19 @@ Combine these elements into one cohesive response. Do not separate them into mul
 # Rules
 
 1. Make your answers as clear and concise as possible, limited to 2-3 sentences maximum.
-2. Use Markdown bold syntax (**text**) to emphasize important words or phrases. Do not use asterisks (*) for emphasis.
-3. Never prescribe medication or provide medical advice.
-4. Maintain strict confidentiality and remind users of privacy considerations when discussing sensitive topics.
-5. Encourage open communication between partners while respecting individual privacy.
-6. Avoid taking sides in disputes; instead, focus on facilitating understanding and compromise.
-7. Be sensitive to cultural differences in relationship norms and expectations.
-8. Promote healthy relationship practices and boundaries.
-9. Never invent or assume the user's name. Always ask for it if unknown.
-10. Always steer the conversation back to the chosen topic {topic}.
-11. Provide solutions related to this specific area of the relationship.
-12. Do not say you are an AI agent or chatbot. Say you are a relationship advisor for couples.
-13. Ask only one question per response. Ensure your response ends with a single, clear question.
+2. Ask only one question per response. Ensure your response ends with a single, clear question.
+3. Use Markdown bold syntax (**text**) to emphasize important words or phrases.
+4. Never prescribe medication or provide medical advice.
+5. Maintain strict confidentiality and remind users of privacy considerations when discussing sensitive topics.
+6. Encourage open communication between partners while respecting individual privacy.
+7. Avoid taking sides in disputes; instead, focus on facilitating understanding and compromise.
+8. Be sensitive to cultural differences in relationship norms and expectations.
+9. Promote healthy relationship practices and boundaries.
+10. Never invent or assume the user's name.
+11. Always steer the conversation back to the chosen topic {topic}.
+12. Provide solutions related to this specific area of the relationship.
+13. Do not say you are an AI agent or chatbot. Say you are a relationship advisor for couples.
+14. After nurturing the conversation, for not too long, you can nicely end it with solutions focused on the topic {topic} and conversation history. List 5 of them maximum as bullet points.
 
 Current conversation:
 {history}
@@ -111,6 +108,10 @@ prompt = ChatPromptTemplate.from_messages([
 conversations = {}
 
 def generate_suggestions(response: str, conversation_history: List[str]) -> List[str]:
+    # Don't generate suggestions if the AI is asking for the user's name
+    if "may I know your name?" in response.lower() or "what's your name?" in response.lower():
+        return []
+
     prompt = f"""
     Based on the following conversation history and the AI's last response, generate 3 short, relevant suggestions for how the user might respond. These suggestions should be from the user's perspective and help to further the conversation or address the relationship issue at hand.
 
@@ -139,7 +140,7 @@ def generate_suggestions(response: str, conversation_history: List[str]) -> List
                 time.sleep(RETRY_DELAY)
             else:
                 print(f"Error generating suggestions after {MAX_RETRIES} attempts: {str(e)}")
-                return ["Could you clarify that?", "How does that make you feel?", "What do you think we should do?"]
+                return []  # Return an empty list instead of default suggestions
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -148,8 +149,6 @@ def chat():
 
     try:
         data = request.json
-        print("Received data:", data)
-        
         message = data.get('message')
         is_initial_context = data.get('isInitialContext', False)
         conversation_id = data.get('conversation_id')
@@ -157,20 +156,19 @@ def chat():
         if not message:
             return jsonify({'error': 'Message is required'}), 400
         
-        print(f"Received message: {message}")
-        print(f"Is initial context: {is_initial_context}")
-        print(f"Conversation ID: {conversation_id}")
-        
         if not conversation_id or conversation_id not in conversations:
             conversation_id = str(uuid.uuid4())
-            print(f"Creating new conversation with ID: {conversation_id}")
             memory = ConversationBufferMemory(return_messages=True, input_key="input", memory_key="history")
-            conversations[conversation_id] = LLMChain(
-                llm=llm,
-                prompt=prompt,
-                verbose=True,
-                memory=memory
-            )
+            conversations[conversation_id] = {
+                'chain': LLMChain(
+                    llm=llm,
+                    prompt=prompt,
+                    verbose=True,
+                    memory=memory
+                ),
+                'name_provided': False,
+                'context': None
+            }
         
         conversation = conversations[conversation_id]
         
@@ -178,26 +176,44 @@ def chat():
             try:
                 if is_initial_context:
                     context = json.loads(message)
+                    conversation['context'] = context
                     initial_prompt = f"""
-                    The user has provided the following information:
-                    Current state of the relationship: {context['state']}
-                    Current user mood: {context['mood']}
-                    Current situation awareness: {context['location']}
-                    Relationship topic to focus on: {context['topic']}
-
-                    Based on this information, provide a single, concise initial response that acknowledges these details. Your response must be a single paragraph of 3-4 sentences maximum. Do not invent or assume any names. You need to respect the protocol and provide solutions focused on the chosen topic ({context['topic']}). End your response with a single question asking for the user's name.
+                    Hi there! I'm Coopleo, your friendly relationship advisor. I'm here to chat about your relationship and help where I can. I've got a bit of background about your situation, which is great. Let's start simple - what's your name?
                     """
-                    response = conversation.predict(input=initial_prompt, state=context['state'], mood=context['mood'], location=context['location'], topic=context['topic'])
+                    response = initial_prompt
+                    # Store the context in the conversation memory for future use
+                    conversation['chain'].memory.chat_memory.add_user_message(json.dumps(context))
+                    # Return response without suggestions for the initial message (asking for name)
+                    return jsonify({'response': response, 'suggestions': [], 'conversation_id': conversation_id})
                 else:
-                    response = conversation.predict(input=message, state="", mood="", location="", topic="")
+                    # Check if this is the second message (user's name)
+                    if not conversation['name_provided']:
+                        user_name = message.strip()
+                        context = conversation['context']
+                        response = f"""
+                        Nice to meet you, {user_name}! Thanks for sharing a bit about your relationship. I understand you'd like to focus on {context['topic']}. Could you tell me more about what's on your mind regarding this?
+                        """
+                        conversation['name_provided'] = True
+                        conversation['chain'].memory.chat_memory.add_human_message(user_name)
+                        conversation['chain'].memory.chat_memory.add_ai_message(response)
+                    else:
+                        # For subsequent messages, use the regular conversation flow
+                        context = conversation['context']
+                        response = conversation['chain'].predict(
+                            input=message,
+                            state=context['state'],
+                            mood=context['mood'],
+                            location=context['location'],
+                            topic=context['topic']
+                        )
                 
-                # Get the conversation history
-                conversation_history = [msg.content for msg in conversation.memory.chat_memory.messages]
+                # Check if the response contains bullet points (indicating final solutions)
+                contains_bullet_points = any(line.strip().startswith(('•', '-', '*')) for line in response.split('\n'))
                 
-                suggestions = generate_suggestions(response, conversation_history)
-                
-                print(f"AI Response: {response}")
-                print(f"Suggestions: {suggestions}")
+                # Generate suggestions for all responses except when providing final solutions
+                suggestions = []
+                if not contains_bullet_points:
+                    suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
                 
                 return jsonify({'response': response, 'suggestions': suggestions, 'conversation_id': conversation_id})
             except Exception as e:
