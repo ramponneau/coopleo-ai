@@ -48,7 +48,7 @@ When interacting with users, guide them through a structured consultation proces
 
 Strict Single Response Protocol: 
 The AI agent is required to adhere strictly to a protocol where it provides a single, concise response to each user input. This response should be focused, relevant, and succinct. 
-This protocol mandates that under no circumstances should the assistant provide multiple responses or paragraphs within a single interaction. 
+This protocol mandates that under no circumstances should the assistant provide multiple responses or paragraphs within a single interaction.
 This approach aims to streamline the conversational flow, enhancing user comprehension and engagement.
 
 # Context
@@ -166,65 +166,59 @@ def chat():
                     prompt=prompt,
                     verbose=True,
                     memory=memory
-                ),
+                ) if llm is not None else None,
                 'name_provided': False,
                 'context': None
             }
         
         conversation = conversations[conversation_id]
         
-        for attempt in range(MAX_RETRIES):
-            try:
-                if is_initial_context:
-                    context = json.loads(message)
-                    conversation['context'] = context
-                    initial_prompt = f"""
-                    Hi there! I'm Coopleo, your dedicated relationship advisor. I'm here to chat about your couple's well-being and offer support where I can. I already have some background information about your situation, which is great. Let's start with something simple – what's your name?
+        if conversation['chain'] is None:
+            return jsonify({'error': 'LLM chain is not initialized'}), 500
+        
+        try:
+            if is_initial_context:
+                context = json.loads(message)
+                conversation['context'] = context
+                initial_prompt = f"""
+                Hi there! I'm Coopleo, your dedicated relationship advisor. I'm here to chat about your couple's well-being and offer support where I can. I already have some background information about your situation, which is great. Let's start with something simple – **what's your name?**
+                """
+                response = initial_prompt
+                conversation['chain'].memory.save_context({"input": json.dumps(context)}, {"output": response})
+                return jsonify({'response': response, 'suggestions': [], 'conversation_id': conversation_id})
+            else:
+                if not conversation['name_provided']:
+                    user_name = message.strip()
+                    context = conversation['context']
+                    response = f"""
+                    Nice to meet you, {user_name}! Thanks for sharing a bit about your relationship. I understand you'd like to focus on {context['topic']}. Could you tell me more about what's on your mind regarding this?
                     """
-                    response = initial_prompt
-                    # Store the context in the conversation memory for future use
-                    conversation['chain'].memory.chat_memory.add_user_message(json.dumps(context))
-                    # Return response without suggestions for the initial message (asking for name)
-                    return jsonify({'response': response, 'suggestions': [], 'conversation_id': conversation_id})
+                    conversation['name_provided'] = True
+                    conversation['chain'].memory.save_context({"input": user_name}, {"output": response})
                 else:
-                    # Check if this is the second message (user's name)
-                    if not conversation['name_provided']:
-                        user_name = message.strip()
-                        context = conversation['context']
-                        response = f"""
-                        Nice to meet you, {user_name}! Thanks for sharing a bit about your relationship. I understand you'd like to focus on {context['topic']}. Could you tell me more about what's on your mind regarding this?
-                        """
-                        conversation['name_provided'] = True
-                        conversation['chain'].memory.chat_memory.add_human_message(user_name)
-                        conversation['chain'].memory.chat_memory.add_ai_message(response)
-                    else:
-                        # For subsequent messages, use the regular conversation flow
-                        context = conversation['context']
-                        response = conversation['chain'].predict(
-                            input=message,
-                            state=context['state'],
-                            mood=context['mood'],
-                            location=context['location'],
-                            topic=context['topic']
-                        )
-                
-                # Check if the response contains bullet points (indicating final solutions)
-                contains_bullet_points = any(line.strip().startswith(('•', '-', '*')) for line in response.split('\n'))
-                
-                # Generate suggestions for all responses except when providing final solutions
-                suggestions = []
-                if not contains_bullet_points:
-                    suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
-                
-                return jsonify({'response': response, 'suggestions': suggestions, 'conversation_id': conversation_id})
-            except Exception as e:
-                if attempt < MAX_RETRIES - 1:
-                    print(f"Attempt {attempt + 1} failed. Retrying in {RETRY_DELAY} seconds...")
-                    time.sleep(RETRY_DELAY)
-                else:
-                    print(f"Error in conversation.predict after {MAX_RETRIES} attempts: {str(e)}")
-                    print(traceback.format_exc())
-                    return jsonify({'error': f'Error in AI processing: {str(e)}'}), 500
+                    context = conversation['context']
+                    response = conversation['chain'].predict(
+                        input=message,
+                        state=context['state'],
+                        mood=context['mood'],
+                        location=context['location'],
+                        topic=context['topic']
+                    )
+            
+            contains_bullet_points = any(line.strip().startswith(('•', '-', '*')) for line in response.split('\n'))
+            
+            suggestions = []
+            if not contains_bullet_points and conversation['name_provided']:
+                suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
+            
+            print(f"Response: {response}")
+            print(f"Suggestions: {suggestions}")
+            
+            return jsonify({'response': response, 'suggestions': suggestions, 'conversation_id': conversation_id})
+        except Exception as e:
+            print(f"Error in conversation processing: {str(e)}")
+            print(traceback.format_exc())
+            return jsonify({'error': f'Error in AI processing: {str(e)}'}), 500
     except Exception as e:
         print(f"Error in /chat: {str(e)}")
         print(traceback.format_exc())

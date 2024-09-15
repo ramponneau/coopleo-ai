@@ -24,13 +24,12 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`HTTP error! status: ${response.status}, message: ${errorText}`);
-    }
-
     const data = await response.json();
     console.log('Received response from Flask server:', data);
+
+    if (!response.ok) {
+      throw new Error(data.error || `HTTP error! status: ${response.status}`);
+    }
 
     if (data.conversation_id) {
       conversationId = data.conversation_id;

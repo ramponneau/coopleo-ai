@@ -43,14 +43,14 @@ export function TherapyDashboard() {
   const [suggestions, setSuggestions] = useState<string[]>([])
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
-    if (isTyping) return
-    if (isInitialContext && initialContextSentRef.current) return
+    if (isTyping) return;
+    if (isInitialContext && initialContextSentRef.current) return;
 
-    setIsTyping(true)
-    setSuggestions([])
+    setIsTyping(true);
+    setSuggestions([]);
     if (!isInitialContext) {
-      setMessages(prev => [...prev, { role: 'user', content: message }])
-      setInputMessage('')
+      setMessages(prev => [...prev, { role: 'user', content: message }]);
+      setInputMessage('');
     }
 
     try {
@@ -59,26 +59,29 @@ export function TherapyDashboard() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message, isInitialContext }),
-      })
+      });
 
-      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+      }
 
-      const data = await response.json()
+      const data = await response.json();
       console.log('Received response:', data);
 
       if (data.response) {
-        setMessages(prev => [...prev, { role: 'assistant', content: data.response }])
+        setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       }
       if (data.suggestions) {
-        setSuggestions(data.suggestions)
+        setSuggestions(data.suggestions);
       }
     } catch (error: any) {
-      console.error('Error sending message:', error)
-      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }])
+      console.error('Error sending message:', error);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }]);
     } finally {
-      setIsTyping(false)
+      setIsTyping(false);
     }
-  }, [isTyping])
+  }, [isTyping]);
 
   useEffect(() => {
     const loadInitialContext = async () => {
@@ -121,38 +124,30 @@ export function TherapyDashboard() {
     loadInitialContext();
   }, [searchParams]);
 
-  const isAskingForName = (message: string): boolean => {
-    const lowerCaseMessage = message.toLowerCase();
-    return lowerCaseMessage.includes("what's your name") || 
-           lowerCaseMessage.includes("what is your name") ||
-           lowerCaseMessage.includes("may i know your name") ||
-           lowerCaseMessage.includes("could you tell me your name");
+  const formatMessage = (content: string | undefined, isAIResponse: boolean) => {
+    if (!content) return ''; // Return an empty string if content is undefined
+    if (!isAIResponse) {
+      return content;
+    }
+    // Preserve line breaks and ensure bullet points and numbered lists start on new lines
+    return content
+      .replace(/(?:^|\n)(\d+\.|\-|\•)\s/gm, '\n$1 ')  // Remove extra line break before numbered lists and bullet points
+      .replace(/\n{3,}/g, '\n\n')  // Remove excess line breaks
+      .trim();  // Remove leading and trailing whitespace
   };
 
-  const fetchAutoReplySuggestions = async (message: string) => {
-    if (isAskingForName(message)) {
-      setSuggestions([]);
-      return;
-    }
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
+  }
 
-    try {
-      const response = await fetch('/api/auto-reply', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ input: message }),
-      });
-      if (response.ok) {
-        const data = await response.json();
-        setSuggestions(data.suggestions);
-      } else {
-        console.error('Error fetching auto-reply suggestions:', await response.text());
-        setSuggestions([]);
-      }
-    } catch (error) {
-      console.error('Error fetching auto-reply suggestions:', error);
-      setSuggestions([]);
-    }
-  };
+  useEffect(() => {
+    scrollToBottom()
+  }, [messages])
+
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const value = e.target.value;
+    setInputMessage(value);
+  }, []);
 
   const handleDeleteHistory = async () => {
     setMessages([])
@@ -181,37 +176,6 @@ export function TherapyDashboard() {
       if (inputMessage.trim()) handleSendMessage(inputMessage)
     }
   }
-
-  const formatMessage = (content: string | undefined, isAIResponse: boolean) => {
-    if (!content) return ''; // Return an empty string if content is undefined
-    if (!isAIResponse) {
-      return content;
-    }
-    // Preserve line breaks and ensure bullet points and numbered lists start on new lines
-    return content
-      .replace(/(?:^|\n)(\d+\.|\-|\•)\s/gm, '\n$1 ')  // Remove extra line break before numbered lists and bullet points
-      .replace(/\n{3,}/g, '\n\n')  // Remove excess line breaks
-      .trim();  // Remove leading and trailing whitespace
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }
-
-  useEffect(() => {
-    scrollToBottom()
-  }, [messages])
-
-  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value
-    setInputMessage(value)
-
-    if (value.length > 10) {  // Only generate suggestions after 10 characters
-      fetchAutoReplySuggestions(value);
-    } else {
-      setSuggestions([])
-    }
-  }, [])
 
   return (
     <div className="flex flex-col h-screen bg-white">
