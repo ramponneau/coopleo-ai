@@ -4,14 +4,14 @@ let conversationId: string | null = null;
 
 export async function POST(req: NextRequest) {
   try {
-    console.log('Received POST request to /api/chat');
     const body = await req.json();
     console.log('Request body:', body);
 
     let payload = { 
       message: body.message, 
       isInitialContext: body.isInitialContext || false,
-      conversation_id: conversationId
+      conversation_id: body.conversation_id,
+      context: body.context
     };
 
     console.log('Sending payload to Flask server:', payload);
@@ -24,21 +24,20 @@ export async function POST(req: NextRequest) {
       body: JSON.stringify(payload),
     });
 
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    }
+
     const data = await response.json();
     console.log('Received response from Flask server:', data);
 
-    if (!response.ok) {
-      throw new Error(data.error || `HTTP error! status: ${response.status}`);
-    }
-
-    if (data.conversation_id) {
-      conversationId = data.conversation_id;
-    }
-
     return NextResponse.json({
       response: data.response,
-      suggestions: data.suggestions || [],
-      conversation_id: data.conversation_id
+      suggestions: data.suggestions,
+      conversation_id: data.conversation_id,
+      contains_recommendations: data.contains_recommendations,
+      asks_for_email: data.asks_for_email
     });
   } catch (error: any) {
     console.error('Error in POST /api/chat:', error);

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, KeyboardEvent, useCallback } from 'react'
+import React, { useState, useEffect, useCallback, useRef, KeyboardEvent as ReactKeyboardEvent } from 'react'
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scroll-area"
@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar"
 import { useSearchParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { Loader2 } from 'lucide-react'
+import { EmailPrompt } from '@/components/ui/email-prompt'
 
 function ChevronRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -40,12 +41,15 @@ export function TherapyDashboard() {
   const router = useRouter()
   const initialContextSentRef = useRef(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
-  const [suggestions, setSuggestions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [containsFinalRecommendations, setContainsFinalRecommendations] = useState(false);
+  const [asksForEmail, setAsksForEmail] = useState(false);
+  const [showEmailPrompt, setShowEmailPrompt] = useState(false)
+  const [context, setContext] = useState<any>(null);
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
     if (isTyping) return;
-    if (isInitialContext && initialContextSentRef.current) return;
-
     setIsTyping(true);
     setSuggestions([]);
     if (!isInitialContext) {
@@ -54,11 +58,16 @@ export function TherapyDashboard() {
     }
 
     try {
-      console.log('Sending message:', { message, isInitialContext });
+      console.log('Sending message:', { message, isInitialContext, context });
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message, isInitialContext }),
+        body: JSON.stringify({ 
+          message, 
+          isInitialContext, 
+          conversation_id: conversationId,
+          context: context 
+        }),
       });
 
       if (!response.ok) {
@@ -72,68 +81,37 @@ export function TherapyDashboard() {
       if (data.response) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       }
-      if (data.suggestions) {
-        setSuggestions(data.suggestions);
+      
+      setContainsFinalRecommendations(data.contains_recommendations);
+      setAsksForEmail(data.asks_for_email);
+
+      if (data.contains_recommendations && data.asks_for_email) {
+        setSuggestions(["Yes", "No"]);
+      } else if (!isInitialContext) {
+        // Always set suggestions for non-initial context messages
+        setSuggestions(data.suggestions || []);
+      } else {
+        setSuggestions([]);
       }
+
+      if (data.conversation_id) {
+        setConversationId(data.conversation_id);
+      }
+
     } catch (error: any) {
       console.error('Error sending message:', error);
       setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }]);
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping]);
+  }, [isTyping, conversationId, context]);
 
-  useEffect(() => {
-    const loadInitialContext = async () => {
-      if (initialContextSentRef.current) return;
-
-      const contextParam = searchParams.get('context');
-      console.log('Context param:', contextParam);
-
-      if (contextParam) {
-        try {
-          const decodedContext = decodeURIComponent(contextParam);
-          const { initialContext } = JSON.parse(decodedContext);
-          console.log('Parsed initial context:', initialContext);
-          
-          initialContextSentRef.current = true;
-          
-          // Send the initial context to the backend
-          const response = await fetch('/api/chat', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ message: JSON.stringify(initialContext), isInitialContext: true }),
-          });
-
-          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-
-          const data = await response.json();
-          setMessages([{ role: 'assistant', content: data.response }]);
-          if (data.suggestions) {
-            setSuggestions(data.suggestions);
-          }
-        } catch (error) {
-          console.error('Error parsing context:', error);
-        }
-      } else {
-        console.log('Missing context');
-        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. How can I assist you today?" }]);
-      }
-    };
-
-    loadInitialContext();
-  }, [searchParams]);
-
-  const formatMessage = (content: string | undefined, isAIResponse: boolean) => {
-    if (!content) return ''; // Return an empty string if content is undefined
-    if (!isAIResponse) {
-      return content;
-    }
-    // Preserve line breaks and ensure bullet points and numbered lists start on new lines
+  const formatMessage = (content: string, isAIResponse: boolean) => {
+    if (!isAIResponse) return content;
     return content
-      .replace(/(?:^|\n)(\d+\.|\-|\•)\s/gm, '\n$1 ')  // Remove extra line break before numbered lists and bullet points
-      .replace(/\n{3,}/g, '\n\n')  // Remove excess line breaks
-      .trim();  // Remove leading and trailing whitespace
+      .replace(/^\d+\.\s/gm, '• ') // Replace numbered lists with bullet points
+      .replace(/\n/g, '  \n') // Add two spaces before newlines for markdown line breaks
+      .trim();
   };
 
   const scrollToBottom = () => {
@@ -163,19 +141,73 @@ export function TherapyDashboard() {
         const initialContext = { state, mood, location, topic }
         await handleSendMessage(JSON.stringify(initialContext), true)
       } else {
-        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. How can I assist you today?" }])
+        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }])
       }
     } catch (error) {
       console.error('Error resetting conversation:', error)
     }
   }
 
-  const handleKeyPress = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyPress = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (inputMessage.trim()) handleSendMessage(inputMessage)
     }
   }
+
+  const handleUserResponse = useCallback((response: string) => {
+    if (containsFinalRecommendations && asksForEmail) {
+      if (response.toLowerCase() === 'yes') {
+        setShowEmailPrompt(true);
+      } else if (response.toLowerCase() === 'no') {
+        handleSendMessage("No problem. Is there anything else I can help you with?");
+      }
+    } else {
+      handleSendMessage(response);
+    }
+  }, [containsFinalRecommendations, asksForEmail, handleSendMessage]);
+
+  const handleEmailSubmit = async (email: string) => {
+    // Handle email submission logic here
+    // You can call the send-transcript endpoint with the email and conversation data
+    // After successful email sending, you can close the email prompt
+    setShowEmailPrompt(false);
+    handleSendMessage("Thank you for providing your email. The relationship plan has been sent. Is there anything else I can help you with?");
+  };
+
+  useEffect(() => {
+    console.log('Suggestions updated:', suggestions);
+  }, [suggestions]);
+
+  useEffect(() => {
+    const loadInitialContext = async () => {
+      if (initialContextSentRef.current) return;
+
+      const contextParam = searchParams.get('context');
+      console.log('Context param:', contextParam);
+
+      if (contextParam) {
+        try {
+          const decodedContext = decodeURIComponent(contextParam);
+          const { initialContext } = JSON.parse(decodedContext);
+          console.log('Parsed initial context:', initialContext);
+          
+          setContext(initialContext);
+          initialContextSentRef.current = true;
+          
+          await handleSendMessage(JSON.stringify(initialContext), true);
+        } catch (error) {
+          console.error('Error parsing context:', error);
+          setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }]);
+        }
+      } else {
+        console.log('Missing context');
+        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }]);
+      }
+    };
+
+    loadInitialContext();
+  }, [searchParams, handleSendMessage]);
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -189,15 +221,27 @@ export function TherapyDashboard() {
             className="h-8 sm:h-10 w-auto transition-transform duration-200 ease-in-out transform hover:scale-105"
           />
         </button>
-        <Button 
-          onClick={handleDeleteHistory} 
-          size="icon" 
-          variant="ghost"
-          className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
-        >
-          <ReloadIcon className="w-5 h-5 text-gray-600" />
-          <span className="sr-only">Start New Conversation</span>
-        </Button>
+        <div className="flex items-center">
+          {/* Test button for email prompt */}
+          <Button 
+            onClick={() => setShowEmailPrompt(true)} 
+            size="icon" 
+            variant="ghost"
+            className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors mr-2"
+          >
+            <Mail className="w-5 h-5 text-gray-600" />
+            <span className="sr-only">Test Email Prompt</span>
+          </Button>
+          <Button 
+            onClick={handleDeleteHistory} 
+            size="icon" 
+            variant="ghost"
+            className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+          >
+            <ReloadIcon className="w-5 h-5 text-gray-600" />
+            <span className="sr-only">Start New Conversation</span>
+          </Button>
+        </div>
       </header>
       <div className="flex-1 overflow-hidden">
         <ScrollArea className="h-full px-2 sm:px-4 py-4">
@@ -222,11 +266,11 @@ export function TherapyDashboard() {
                     <ReactMarkdown 
                       className="whitespace-pre-wrap leading-tight text-xs sm:text-sm"
                       components={{
-                        strong: ({node, ...props}) => <span className="font-semibold" {...props} />,
+                        strong: ({node, ...props}) => <span className="font-bold" {...props} />,
                         li: ({node, ...props}) => <li className="ml-4" {...props} />,
                         ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
                         ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-1 last:mb-0" {...props} />
+                        p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />
                       }}
                     >
                       {formatMessage(msg.content, msg.role === 'assistant')}
@@ -240,15 +284,15 @@ export function TherapyDashboard() {
                   )}
                 </div>
                 {msg.role === 'assistant' && index === messages.length - 1 && suggestions.length > 0 && (
-                  <div className="flex flex-col gap-1 sm:gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
+                  <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
                     {suggestions.map((suggestion, sugIndex) => (
                       <button
                         key={sugIndex}
-                        onClick={() => handleSendMessage(suggestion)}
-                        className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-1 px-2 sm:px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
+                        onClick={() => handleUserResponse(suggestion)}
+                        className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
                       >
-                        <span className="flex-grow mr-1 sm:mr-2">{suggestion}</span>
-                        <ChevronRightIcon className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
+                        <span className="flex-grow mr-2">{suggestion.trim()}</span>
+                        <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
                       </button>
                     ))}
                   </div>
@@ -273,7 +317,7 @@ export function TherapyDashboard() {
       <div className="p-2 sm:p-4 bg-white">
         <form onSubmit={(e) => {
           e.preventDefault()
-          if (inputMessage.trim()) handleSendMessage(inputMessage)
+          if (inputMessage.trim()) handleUserResponse(inputMessage)
         }} className="relative">
           <Textarea
             value={inputMessage}
@@ -298,6 +342,16 @@ export function TherapyDashboard() {
           </Button>
         </form>
       </div>
+      
+      {showEmailPrompt && (
+        <EmailPrompt 
+          conversationId={conversationId} 
+          onClose={() => {
+            setShowEmailPrompt(false);
+            handleSendMessage("Thank you for providing your email. The relationship plan has been sent. Is there anything else I can help you with?");
+          }}
+        />
+      )}
     </div>
   )
 }
@@ -340,6 +394,26 @@ function ReloadIcon(props: React.SVGProps<SVGSVGElement>) {
       <path d="M21 3v5h-5" />
       <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
       <path d="M3 21v-5h5" />
+    </svg>
+  )
+}
+
+function Mail(props: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      {...props}
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect width="20" height="16" x="2" y="4" rx="2" />
+      <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
     </svg>
   )
 }

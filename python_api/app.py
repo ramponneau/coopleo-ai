@@ -11,6 +11,8 @@ import json
 import uuid
 import time
 from typing import List
+from werkzeug.exceptions import HTTPException
+import re
 
 # Load environment variables
 load_dotenv()
@@ -41,15 +43,19 @@ except Exception as e:
     llm = None
 
 # Define conversation template
+
 template = """
 Your name is Coopleo. 
 You are a couple relationship advisor created to assist users with all their relationship health, well-being, and behavioral concerns. 
 When interacting with users, guide them through a structured consultation process.
+The goal is to help the user to understand their relationship and to help them to improve it.
+You must come to a conclusion after roughly 8 exchanges by providing **final recommendations**.
 
 Strict Single Response Protocol: 
 The AI agent is required to adhere strictly to a protocol where it provides a single, concise response to each user input. This response should be focused, relevant, and succinct. 
-This protocol mandates that under no circumstances should the assistant provide multiple responses or paragraphs within a single interaction.
-This approach aims to streamline the conversational flow, enhancing user comprehension and engagement.
+Keep responses between 2-3 sentences maximum, without using ellipsis or any form of truncation.
+Prioritize asking questions to understand the user's needs better.
+Do not provide detailed advice in the main response, but only to end the conversation with **final recommendations**.
 
 # Context
 
@@ -59,41 +65,69 @@ The user has provided the following initial context:
 * Current situation awareness: {location}
 * Relationship topic to focus on: {topic}
 
-Keep this context in mind throughout the conversation, but allow the user to freely discuss their concerns. Pay special attention to the chosen topic {topic} and provide tailored advice and insights related to this area of their relationship.
+Keep this context in mind throughout the conversation, but allow the user to freely discuss their concerns. Pay special attention to the chosen topic {topic} that the user has chosen to focus on.
 
 # Response Format
 
 Structure your single, unified response as follows:
 1. For the first interaction:
-   a. A brief greeting.
+   a. Greet the user naturally, say you're **Coopleo**.
    b. Ask for the user's name only once and never again.
    c. Use the user's name in your response.
 
 2. For subsequent interactions:
    a. Address the user by name if known. 
    b. A 1 sentence brief acknowledgment or validation of the user's previous statement.
-   c. A concise piece of advice or insight related to the user's concern, focusing on the chosen topic when relevant.
+   c. A very short insight related to the user's concern, focusing on the chosen topic when relevant.
    d. A single, focused follow-up question to encourage further discussion about the chosen topic.
 
 Combine these elements into one cohesive response. Do not separate them into multiple messages or paragraphs.
 
+Use Markdown **bold** syntax to emphasize one important key phrase per response.
+
+# End of Conversation
+
+After approximately 8-10 exchanges, when you feel you have a good understanding of the situation, provide final recommendations as follows:
+1. Write 4-5 sentences to summarize the conversation focused on the topic {topic}.
+2. List 3-5 key recommendations to improve the user's relationship.
+3. Ask the user if they want to receive these recommendations via email as final question.
+
+Use the exact phrase "final recommendations" when providing the recommendations.
+
 # Rules
 
-1. Make your answers as clear and concise as possible, limited to 2-3 sentences maximum.
-2. Ask only one question per response. Ensure your response ends with a single, clear question.
-3. Use Markdown bold syntax (**text**) to emphasize important words or phrases.
+1. Make your answers as clear and concise as possible, limited to 1-2 sentences maximum.
+2. Always end your response by asking only one question.
+3. Use Markdown **bold** syntax (**text**) to emphasize one important key phrase per response.
 4. Never prescribe medication or provide medical advice.
-5. Maintain strict confidentiality and remind users of privacy considerations when discussing sensitive topics.
-6. Encourage open communication between partners while respecting individual privacy.
-7. Avoid taking sides in disputes; instead, focus on facilitating understanding and compromise.
-8. Be sensitive to cultural differences in relationship norms and expectations.
-9. Promote healthy relationship practices and boundaries.
-10. Never invent or assume the user's name.
-11. Always steer the conversation back to the chosen topic {topic}.
-12. Provide solutions related to this specific area of the relationship.
+5. Only use biologicial his or her pronouns.
+6. Maintain strict confidentiality and remind users of privacy considerations when discussing sensitive topics.
+7. Encourage open communication between partners while respecting individual privacy.
+8. Avoid taking sides in disputes; instead, focus on facilitating understanding and compromise.
+9. Be sensitive to cultural differences in relationship norms and expectations.
+10. Promote healthy relationship practices and boundaries.
+11. Never invent or assume the user's name.
+12. Always steer the conversation back to the chosen topic {topic}.
 13. Do not say you are an AI agent or chatbot. Say you are a relationship advisor for couples.
-14. After nurturing the conversation, for not too long, you can nicely end it with solutions focused on the topic {topic} and conversation history. List 5 of them maximum as bullet points.
-15. Finish the conversation with a nice closing, synthetizing the conversation in one sentence, and a CTA to keep the conversation going.
+14. End the conversation with a very short summary of the history of the conversation and "final recommandations" tool focused on the topic {topic}.
+15. Trigger the "email-prompt" tool to show the UI component.
+
+# Language selection
+
+1. Whenever a user interacts with you, detect the language used in their query and respond in that same language.
+2. Utilize the text of the user's input to determine the language.
+3. If the language is ambiguous or mixed, default to the most prominently used language in the query.
+4. Ensure your responses are culturally and contextually appropriate for the language and region.
+
+Examples:
+
+1. If the user speaks French, respond in French.
+2. If the user speaks Spanish, respond in Spanish.
+3. If the query contains multiple languages, choose the one that is most used in the query for your response.
+
+# Continuous Improvement
+
+At the end of each session, ask the user if they would like these recommandations sent to their email.
 
 Current conversation:
 {history}
@@ -109,39 +143,41 @@ prompt = ChatPromptTemplate.from_messages([
 conversations = {}
 
 def generate_suggestions(response: str, conversation_history: List[str]) -> List[str]:
-    # Don't generate suggestions if the AI is asking for the user's name
-    if "may i know your name?" in response.lower() or "what's your name?" in response.lower():
-        return []
-
     prompt = f"""
-    Based on the following conversation history and the AI's last response, generate 3 short, relevant suggestions for how the user might respond. These suggestions should be from the user's perspective and help to further the conversation or address the relationship issue at hand.
+    Based on the following conversation history and the AI's last response, generate 3 short, natural, and relevant auto-reply options that the user might say. 
+    These should be concise and specific examples, without any introductory text, numbering, or ellipsis.
 
     Conversation history:
-    {' '.join(conversation_history[-5:])}  # Use the last 5 exchanges for context
+    {' '.join(conversation_history[-5:])}
 
     AI's last response:
     {response}
 
-    Generate 3 suggestions, each no longer than 10 words. The suggestions should be diverse and cover different aspects or approaches to the conversation. Format your response as a numbered list:
-    1.
-    2.
-    3.
+    Generate 3 suggestions, each between 2-10 words.
     """
 
     for attempt in range(MAX_RETRIES):
         try:
             suggestions_response = llm.generate([prompt])
             suggestions = suggestions_response.generations[0][0].text.strip().split('\n')
-            # Clean up suggestions (remove numbering, trim whitespace)
-            suggestions = [s.split('.', 1)[-1].strip() for s in suggestions if s]
-            return suggestions[:3]  # Ensure we return at most 3 suggestions
+            suggestions = [s.strip().rstrip('...') for s in suggestions if s.strip()]
+            suggestions = [s for s in suggestions if 2 <= len(s.split()) <= 10]
+            return suggestions[:3]
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
                 print(f"Attempt {attempt + 1} failed. Retrying in {RETRY_DELAY} seconds...")
                 time.sleep(RETRY_DELAY)
             else:
                 print(f"Error generating suggestions after {MAX_RETRIES} attempts: {str(e)}")
-                return []  # Return an empty list instead of default suggestions
+                return []
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    # Pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return jsonify(error=str(e)), e.code
+    # Now you're handling non-HTTP exceptions only
+    return jsonify(error=str(e)), 500
 
 @app.route('/chat', methods=['POST'])
 def chat():
@@ -153,6 +189,7 @@ def chat():
         message = data.get('message')
         is_initial_context = data.get('isInitialContext', False)
         conversation_id = data.get('conversation_id')
+        context = data.get('context')
         
         if not message:
             return jsonify({'error': 'Message is required'}), 400
@@ -167,58 +204,55 @@ def chat():
                     verbose=True,
                     memory=memory
                 ) if llm is not None else None,
-                'name_provided': False,
-                'context': None
+                'context': context or {},
+                'message_count': 0
             }
         
         conversation = conversations[conversation_id]
+        conversation['message_count'] += 1
         
         if conversation['chain'] is None:
             return jsonify({'error': 'LLM chain is not initialized'}), 500
         
         try:
             if is_initial_context:
-                context = json.loads(message)
+                context = json.loads(message) if isinstance(message, str) else message
                 conversation['context'] = context
-                initial_prompt = f"""
-                Hi there! I'm Coopleo, your dedicated relationship advisor. I'm here to chat about your couple's well-being and offer support where I can. I already have some background information about your situation, which is great. Let's start with something simple – **what's your name?**
-                """
-                response = initial_prompt
-                conversation['chain'].memory.save_context({"input": json.dumps(context)}, {"output": response})
-                return jsonify({'response': response, 'suggestions': [], 'conversation_id': conversation_id})
+                input_message = "Greet the user naturally, say you're **Coopleo** and ask for their name."
             else:
-                if not conversation['name_provided']:
-                    user_name = message.strip()
-                    context = conversation['context']
-                    response = f"""
-                    Nice to meet you, {user_name}! Thanks for sharing a bit about your relationship. I understand you'd like to focus on {context['topic']}. Could you tell me more about what's on your mind regarding this?
-                    """
-                    conversation['name_provided'] = True
-                    conversation['chain'].memory.save_context({"input": user_name}, {"output": response})
-                else:
-                    context = conversation['context']
-                    response = conversation['chain'].predict(
-                        input=message,
-                        state=context['state'],
-                        mood=context['mood'],
-                        location=context['location'],
-                        topic=context['topic']
-                    )
-            
-            contains_bullet_points = any(line.strip().startswith(('•', '-', '*')) for line in response.split('\n'))
-            
+                context = conversation['context']
+                input_message = f"The user's message: {message}\nRespond naturally without reintroducing yourself. Remember the context of the ongoing conversation."
+
+            response = conversation['chain'].predict(
+                input=input_message,
+                state=context.get('state', 'Unknown'),
+                mood=context.get('mood', 'Unknown'),
+                location=context.get('location', 'Unknown'),
+                topic=context.get('topic', 'relationships in general')
+            )
+
+            contains_recommendations = "final recommendations" in response.lower()
+            asks_for_email = "email" in response.lower() and "?" in response
+
             suggestions = []
-            if not contains_bullet_points and conversation['name_provided']:
+            if contains_recommendations and asks_for_email:
+                suggestions = ["Yes", "No"]
+            elif not is_initial_context:
                 suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
-            
-            print(f"Response: {response}")
-            print(f"Suggestions: {suggestions}")
-            
-            return jsonify({'response': response, 'suggestions': suggestions, 'conversation_id': conversation_id})
+
+            return jsonify({
+                'response': response,
+                'suggestions': suggestions,
+                'conversation_id': conversation_id,
+                'contains_recommendations': contains_recommendations,
+                'asks_for_email': asks_for_email
+            })
+
         except Exception as e:
             print(f"Error in conversation processing: {str(e)}")
             print(traceback.format_exc())
             return jsonify({'error': f'Error in AI processing: {str(e)}'}), 500
+
     except Exception as e:
         print(f"Error in /chat: {str(e)}")
         print(traceback.format_exc())
