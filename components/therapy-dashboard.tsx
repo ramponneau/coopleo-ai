@@ -47,6 +47,8 @@ export function TherapyDashboard() {
   const [asksForEmail, setAsksForEmail] = useState(false);
   const [showEmailPrompt, setShowEmailPrompt] = useState(false)
   const [context, setContext] = useState<any>(null);
+  const [isReasoning, setIsReasoning] = useState(false);
+  const [finalRecommendationsResponded, setFinalRecommendationsResponded] = useState(false);
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
     if (isTyping) return;
@@ -82,13 +84,15 @@ export function TherapyDashboard() {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
       }
       
-      setContainsFinalRecommendations(data.contains_recommendations);
-      setAsksForEmail(data.asks_for_email);
-
       if (data.contains_recommendations && data.asks_for_email) {
-        setSuggestions(["Yes", "No"]);
-      } else if (!isInitialContext) {
-        // Always set suggestions for non-initial context messages
+        setSuggestions([
+          "Yes, I'd like to receive the recommendations via email.",
+          "No, thank you."
+        ]);
+        setContainsFinalRecommendations(true);
+        setAsksForEmail(true);
+        setFinalRecommendationsResponded(false);
+      } else if (!isInitialContext && !finalRecommendationsResponded) {
         setSuggestions(data.suggestions || []);
       } else {
         setSuggestions([]);
@@ -104,7 +108,7 @@ export function TherapyDashboard() {
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, conversationId, context]);
+  }, [isTyping, conversationId, context, finalRecommendationsResponded]);
 
   const formatMessage = (content: string, isAIResponse: boolean) => {
     if (!isAIResponse) return content;
@@ -157,11 +161,13 @@ export function TherapyDashboard() {
 
   const handleUserResponse = useCallback((response: string) => {
     if (containsFinalRecommendations && asksForEmail) {
-      if (response.toLowerCase() === 'yes') {
+      setFinalRecommendationsResponded(true);
+      if (response.toLowerCase().includes('yes')) {
         setShowEmailPrompt(true);
-      } else if (response.toLowerCase() === 'no') {
+      } else if (response.toLowerCase().includes('no')) {
         handleSendMessage("No problem. Is there anything else I can help you with?");
       }
+      setSuggestions([]); // Clear suggestions after responding to final recommendations
     } else {
       handleSendMessage(response);
     }
@@ -208,6 +214,10 @@ export function TherapyDashboard() {
 
     loadInitialContext();
   }, [searchParams, handleSendMessage]);
+
+  const handleEmailPromptClose = useCallback(() => {
+    setShowEmailPrompt(false);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -283,7 +293,7 @@ export function TherapyDashboard() {
                     </Avatar>
                   )}
                 </div>
-                {msg.role === 'assistant' && index === messages.length - 1 && suggestions.length > 0 && (
+                {msg.role === 'assistant' && index === messages.length - 1 && suggestions.length > 0 && !finalRecommendationsResponded && (
                   <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
                     {suggestions.map((suggestion, sugIndex) => (
                       <button
@@ -325,15 +335,15 @@ export function TherapyDashboard() {
             onKeyPress={handleKeyPress}
             placeholder="Type your message here..."
             className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
-            disabled={isTyping}
+            disabled={isTyping || isReasoning || showEmailPrompt}
           />
           <Button 
             type="submit" 
             size="icon" 
             className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-            disabled={isTyping || !inputMessage.trim()}
+            disabled={isTyping || !inputMessage.trim() || isReasoning || showEmailPrompt}
           >
-            {isTyping ? (
+            {isTyping || isReasoning ? (
               <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
             ) : (
               <ArrowUpIcon className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -344,13 +354,12 @@ export function TherapyDashboard() {
       </div>
       
       {showEmailPrompt && (
-        <EmailPrompt 
-          conversationId={conversationId} 
-          onClose={() => {
-            setShowEmailPrompt(false);
-            handleSendMessage("Thank you for providing your email. The relationship plan has been sent. Is there anything else I can help you with?");
-          }}
-        />
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <EmailPrompt 
+            conversationId={conversationId} 
+            onClose={handleEmailPromptClose}
+          />
+        </div>
       )}
     </div>
   )

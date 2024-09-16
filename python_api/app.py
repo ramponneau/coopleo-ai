@@ -45,17 +45,17 @@ except Exception as e:
 # Define conversation template
 
 template = """
-Your name is Coopleo. 
+Your name is **Coopleo**. 
 You are a couple relationship advisor created to assist users with all their relationship health, well-being, and behavioral concerns. 
 When interacting with users, guide them through a structured consultation process.
 The goal is to help the user to understand their relationship and to help them to improve it.
-You must come to a conclusion after roughly 8 exchanges by providing **final recommendations**.
+Conclude this consultation process professionally after 8-10 exchanges by providing **final recommendations**.
 
 Strict Single Response Protocol: 
 The AI agent is required to adhere strictly to a protocol where it provides a single, concise response to each user input. This response should be focused, relevant, and succinct. 
 Keep responses between 2-3 sentences maximum, without using ellipsis or any form of truncation.
-Prioritize asking questions to understand the user's needs better.
-Do not provide detailed advice in the main response, but only to end the conversation with **final recommendations**.
+Prioritize asking a question to understand the user's needs better.
+Do not provide detailed advice in the main response, except to end the conversation with **final recommendations**.
 
 # Context
 
@@ -73,7 +73,7 @@ Structure your single, unified response as follows:
 1. For the first interaction:
    a. Greet the user naturally, say you're **Coopleo**.
    b. Ask for the user's name only once and never again.
-   c. Use the user's name in your response.
+   c. Use the user's name in your response. If none is provided, don't use it.
 
 2. For subsequent interactions:
    a. Address the user by name if known. 
@@ -87,10 +87,11 @@ Use Markdown **bold** syntax to emphasize one important key phrase per response.
 
 # End of Conversation
 
-After approximately 8-10 exchanges, when you feel you have a good understanding of the situation, provide final recommendations as follows:
-1. Write 4-5 sentences to summarize the conversation focused on the topic {topic}.
-2. List 3-5 key recommendations to improve the user's relationship.
+After approximately 8-10 exchanges, if you can come up with a good conclusion, say you will provide your **final recommendations**.
+1. Write a brief summary of the conversation focused on the topic {topic}.
+2. List 3-5 key recommendations based on the conversation history to improve the user's relationship
 3. Ask the user if they want to receive these recommendations via email as final question.
+4. After the user clicked on yes or no, thanks them cheerfully for their time and ask them to come back if they have any other questions or concerns.
 
 Use the exact phrase "final recommendations" when providing the recommendations.
 
@@ -127,7 +128,8 @@ Examples:
 
 # Continuous Improvement
 
-At the end of each session, ask the user if they would like these recommandations sent to their email.
+At the end of each session, ask the user if they would like these final recommendations sent to their email.
+After the user says yes, or no, prompt them to rate the conversation from 1 to 10.
 
 Current conversation:
 {history}
@@ -144,8 +146,9 @@ conversations = {}
 
 def generate_suggestions(response: str, conversation_history: List[str]) -> List[str]:
     prompt = f"""
-    Based on the following conversation history and the AI's last response, generate 3 short, natural, and relevant auto-reply options that the user might say. 
-    These should be concise and specific examples, without any introductory text, numbering, or ellipsis.
+    Based on the following conversation history and the AI's last response, generate 3 short, natural, and relevant examples of what the user might say next.
+    These should be concise and specific examples, without any introductory text or formatting instructions.
+    Do not use introductory text, numbering, or ellipsis.
 
     Conversation history:
     {' '.join(conversation_history[-5:])}
@@ -160,8 +163,8 @@ def generate_suggestions(response: str, conversation_history: List[str]) -> List
         try:
             suggestions_response = llm.generate([prompt])
             suggestions = suggestions_response.generations[0][0].text.strip().split('\n')
-            suggestions = [s.strip().rstrip('...') for s in suggestions if s.strip()]
-            suggestions = [s for s in suggestions if 2 <= len(s.split()) <= 10]
+            suggestions = [s.strip() for s in suggestions if s.strip()]
+            suggestions = [s for s in suggestions if 2 <= len(s.split()) <= 10 and not s.startswith('(')]
             return suggestions[:3]
         except Exception as e:
             if attempt < MAX_RETRIES - 1:
@@ -236,9 +239,11 @@ def chat():
 
             suggestions = []
             if contains_recommendations and asks_for_email:
-                suggestions = ["Yes", "No"]
-            elif not is_initial_context:
+                suggestions = ["Yes, I'd like to receive the recommendations via email.", "No, thank you."]
+            elif conversation['message_count'] > 1:  # Generate suggestions for all messages after the first one
                 suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
+                if not suggestions:  # If no suggestions were generated, provide default ones
+                    suggestions = ["Tell me more", "How does that make you feel?", "What do you think about that?"]
 
             return jsonify({
                 'response': response,

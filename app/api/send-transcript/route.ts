@@ -46,6 +46,7 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Fetch conversation function
 async function fetchConversation(conversationId: string) {
   // TODO: Implement this function to fetch the actual conversation
   console.log('Fetching conversation for ID:', conversationId);
@@ -55,6 +56,7 @@ async function fetchConversation(conversationId: string) {
   ];
 }
 
+// Generate transcript function
 function generateTranscript(conversation: Array<{ role: string, content: string }>) {
   return conversation.map(msg => `${msg.role}: ${msg.content}`).join('\n\n');
 }

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Mail } from 'lucide-react'
+import { EmailTemplate } from './email-template'
 
 interface EmailPromptProps {
   conversationId: string | null;
@@ -51,14 +52,14 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to send transcript');
+          throw new Error(data.error || 'Failed to send email');
         }
 
         console.log('Email sent successfully:', data);
         onClose();
       } catch (error: any) {
         console.error('Error sending transcript:', error);
-        setError(`Failed to send email: ${error.message}. Please try again.`);
+        setError(`Failed to send email. Please try again.`);
       } finally {
         setIsSending(false)
       }
@@ -85,44 +86,42 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onClick={handleOverlayClick}>
-      <Card className="w-full max-w-md mx-auto" ref={cardRef} onClick={(e) => e.stopPropagation()}>
-        <CardHeader>
-          <CardTitle className="text-2xl font-bold">Receive Relationship Plan</CardTitle>
-          <CardDescription>Please enter your email address to receive your personalized relationship plan</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  <Input
-                    id="email"
-                    placeholder="you@example.com"
-                    type="email"
-                    value={email}
-                    onChange={handleChange}
-                    className={`pl-10 ${!isValid ? 'border-red-500' : ''}`}
-                  />
-                </div>
-                {!isValid && (
-                  <p className="text-sm text-red-500">Please enter a valid email address</p>
-                )}
-                {error && (
-                  <p className="text-sm text-red-500 mt-2">{error}</p>
-                )}
+    <Card className="w-full max-w-md mx-auto" ref={cardRef}>
+      <CardHeader>
+        <CardTitle className="text-2xl font-bold">Receive Relationship Plan</CardTitle>
+        <CardDescription>Please enter your email address to receive your personalized relationship plan</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent>
+          <div className="grid w-full items-center gap-4">
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="email">Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                <Input
+                  id="email"
+                  placeholder="you@example.com"
+                  type="email"
+                  value={email}
+                  onChange={handleChange}
+                  className={`pl-10 ${!isValid ? 'border-red-500' : ''}`}
+                />
               </div>
+              {!isValid && (
+                <p className="text-sm text-red-500">Please enter a valid email address</p>
+              )}
+              {error && (
+                <p className="text-sm text-red-500 mt-2">{error}</p>
+              )}
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full" disabled={isSending}>
-              {isSending ? 'Sending...' : 'Send Relationship Plan'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button type="submit" className="w-full" disabled={isSending}>
+            {isSending ? 'Sending...' : 'Email My Results'}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }
