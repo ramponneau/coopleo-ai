@@ -1,7 +1,17 @@
 'use client'
 
-import { TherapyDashboard } from '@/components/therapy-dashboard'
+import dynamic from 'next/dynamic'
+import { Suspense } from 'react'
+
+const TherapyDashboard = dynamic(
+  () => import('@/components/therapy-dashboard').then((mod) => mod.TherapyDashboard),
+  { ssr: false }
+)
 
 export default function ChatPage() {
-  return <TherapyDashboard />
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <TherapyDashboard />
+    </Suspense>
+  )
 }
