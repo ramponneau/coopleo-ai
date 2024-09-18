@@ -227,10 +227,7 @@ export function TherapyDashboard() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ 
-          email, 
-          emailContent
-        }),
+        body: JSON.stringify({ email, emailContent, finalRecommendations, conversationId }),
       });
 
       if (!response.ok) {

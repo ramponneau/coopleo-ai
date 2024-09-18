@@ -7,9 +7,10 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, emailContent } = await req.json();
+    const { email, emailContent, finalRecommendations, conversationId } = await req.json();
 
     console.log('Attempting to send email to:', email);
+    console.log('Final Recommendations:', finalRecommendations);
     console.log('Email Content:', emailContent);
 
     if (!emailContent) {
