@@ -11,6 +11,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import ReactMarkdown from 'react-markdown'
 import { Loader2 } from 'lucide-react'
 import { EmailPrompt } from '@/components/ui/email-prompt'
+import { EmailTemplate } from '@/components/ui/email-template';
 
 function ChevronRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -118,7 +119,7 @@ export function TherapyDashboard() {
     if (response.toLowerCase() === 'oui') {
       setShowEmailPrompt(true);
     } else {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Je comprends. Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
     }
     setShowFinalOptions(false);
     setIsFinalRecommendationShown(true);
@@ -205,23 +206,36 @@ export function TherapyDashboard() {
       }
     }
 
-    if (!finalRecommendations) {
-      console.error('No final recommendations found in the conversation');
+    if (!finalRecommendations || !conversationId) {
+      console.error('No final recommendations found in the conversation or missing conversation ID');
       setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, je n'ai pas pu trouver les recommandations finales. Voici un message de clôture pour notre conversation." }]);
       return;
     }
 
     try {
+      const emailContent = EmailTemplate({ 
+        name: context?.name || 'Cher utilisateur',
+        topic: context?.topic || 'votre relation',
+        finalRecommendations, 
+        conversationId 
+      });
+
+      console.log('Email content:', emailContent);
+
       const response = await fetch('/api/send-transcript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, conversationId, finalRecommendations }),
+        body: JSON.stringify({ 
+          email, 
+          emailContent
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to send email');
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to send email');
       }
 
       // Add a closing message without sending another request
