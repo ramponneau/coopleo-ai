@@ -1,8 +1,0 @@
-flask==2.2.2
-werkzeug==2.2.2
-langchain>=0.0.184,<0.1.0
-langchain-community>=0.0.6,<0.1.0
-langchain-anthropic>=0.2.1,<0.3.0
-anthropic>=0.3.6,<0.4.0
-flask-cors>=3.0.10,<4.0.0
-python-dotenv>=0.19.2,<0.20.0

@@ -15,7 +15,7 @@ interface Item {
 const states: Item[] = [
   { icon: '☀️', label: 'Épanoui' },
   { icon: '🌥', label: 'Stable' },
-  { icon: '🌨', label: 'En difficulté' },
+  { icon: '🌨', label: 'Difficile' },
   { icon: '⚡️', label: 'Tendu' },
   { icon: '🌪', label: 'Turbulent' }
 ];
@@ -31,7 +31,7 @@ const locations: Item[] = [
   { icon: '🏢', label: 'Travail' },
   { icon: '🌳', label: 'Extérieur' },
   { icon: '🏋️', label: 'Sport' },
-  { icon: '🚇', label: 'En déplacement' }
+  { icon: '🚇', label: 'Transport' }
 ];
 const topics = ['Communication', 'Confiance', 'Intimité', 'Résolution de conflits', 'Moments de qualité', "Projets d'avenir"];
 
@@ -132,7 +132,7 @@ export function MoodCoupleCheckin() {
                   <div className="space-y-1">
                     <h4 className="text-base font-medium">Comment ça marche</h4>
                     <p className="text-sm text-muted-foreground">
-                      Choisissez les options qui décrivent le mieux votre relation actuelle, et nous vous guiderons à travers des étapes simples et concrètes pour améliorer votre relation de couple.
+                      Choisissez les options qui décrivent le mieux votre relation actuelle, et nous vous guiderons  travers des étapes simples et concrètes pour améliorer votre relation de couple.
                     </p>
                   </div>
                   <div className="space-y-1">

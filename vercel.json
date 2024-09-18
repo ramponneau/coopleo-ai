@@ -5,7 +5,8 @@
         "src": "api/index.py",
         "use": "@vercel/python",
         "config": { 
-          "runtime": "python3.9"
+          "runtime": "python3.9",
+          "pythonRequirements": "requirements.txt"
         }
       },
       {
@@ -22,5 +23,8 @@
         "src": "/(.*)",
         "dest": "/$1"
       }
-    ]
+    ],
+    "env": {
+      "PYTHONPATH": ".:python_api/"
+    }
   }

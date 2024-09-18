@@ -1,11 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { Resend } from 'resend';
 
 console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY);
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST(req: NextRequest) {
+export async function POST(req: Request) {
   try {
     const { email, emailContent, finalRecommendations, conversationId } = await req.json();
 
@@ -27,14 +26,14 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error('Resend API Error:', error);
-      return NextResponse.json({ error: 'Failed to send email', details: error }, { status: 500 });
+      return new Response(JSON.stringify({ error: 'Failed to send email', details: error }), { status: 500 });
     }
 
     console.log('Email sent successfully:', data);
-    return NextResponse.json({ success: true, data });
+    return new Response(JSON.stringify({ success: true, data }));
   } catch (error) {
     console.error('Error in /api/send-transcript:', error);
-    return NextResponse.json({ error: 'An error occurred sending the recommendations', details: error }, { status: 500 });
+    return new Response(JSON.stringify({ error: 'An error occurred sending the recommendations', details: error }), { status: 500 });
   }
 }
 
