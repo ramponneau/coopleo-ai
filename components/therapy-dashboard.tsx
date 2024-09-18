@@ -49,9 +49,16 @@ export function TherapyDashboard() {
   const [context, setContext] = useState<any>(null);
   const [isReasoning, setIsReasoning] = useState(false);
   const [finalRecommendationsResponded, setFinalRecommendationsResponded] = useState(false);
+  const [showingFinalRecommendations, setShowingFinalRecommendations] = useState(false);
+  const [showFinalRecommendations, setShowFinalRecommendations] = useState(false);
+  const [messageCount, setMessageCount] = useState(0);
+  const [finalRecommendationReplied, setFinalRecommendationReplied] = useState(false);
+  const [showFinalRecommendationButtons, setShowFinalRecommendationButtons] = useState(false);
+  const [isFinalRecommendationShown, setIsFinalRecommendationShown] = useState(false);
+  const [showFinalOptions, setShowFinalOptions] = useState(false);
 
   const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
-    if (isTyping) return;
+    if (isTyping || isFinalRecommendationShown) return;
     setIsTyping(true);
     setSuggestions([]);
     if (!isInitialContext) {
@@ -82,18 +89,17 @@ export function TherapyDashboard() {
 
       if (data.response) {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
+        setMessageCount(prev => prev + 1);
       }
       
-      if (data.contains_recommendations && data.asks_for_email) {
-        setSuggestions([
-          "Yes, I'd like to receive the recommendations via email.",
-          "No, thank you."
-        ]);
-        setContainsFinalRecommendations(true);
-        setAsksForEmail(true);
-        setFinalRecommendationsResponded(false);
-      } else if (!isInitialContext && !finalRecommendationsResponded) {
-        setSuggestions(data.suggestions || []);
+      setContainsFinalRecommendations(data.contains_recommendations);
+      setAsksForEmail(data.asks_for_email);
+
+      if (data.contains_recommendations) {
+        setShowFinalOptions(true);
+        setSuggestions(["Oui", "Non"]);
+      } else if (!isInitialContext && data.suggestions && data.suggestions.length > 0) {
+        setSuggestions(data.suggestions);
       } else {
         setSuggestions([]);
       }
@@ -104,11 +110,22 @@ export function TherapyDashboard() {
 
     } catch (error: any) {
       console.error('Error sending message:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: `Sorry, I encountered an error: ${error.message}` }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: `Désolé, j'ai rencontré une erreur : ${error.message}` }]);
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, conversationId, context, finalRecommendationsResponded]);
+  }, [isTyping, isFinalRecommendationShown, conversationId, context]);
+
+  const handleFinalOptionResponse = useCallback((response: string) => {
+    if (response.toLowerCase() === 'oui') {
+      setShowEmailPrompt(true);
+    } else {
+      // Invisible prompt to end the conversation nicely
+      handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
+    }
+    setShowFinalOptions(false);
+    setIsFinalRecommendationShown(true);
+  }, [handleSendMessage]);
 
   const formatMessage = (content: string, isAIResponse: boolean) => {
     if (!isAIResponse) return content;
@@ -145,7 +162,7 @@ export function TherapyDashboard() {
         const initialContext = { state, mood, location, topic }
         await handleSendMessage(JSON.stringify(initialContext), true)
       } else {
-        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }])
+        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }])
       }
     } catch (error) {
       console.error('Error resetting conversation:', error)
@@ -160,25 +177,62 @@ export function TherapyDashboard() {
   }
 
   const handleUserResponse = useCallback((response: string) => {
-    if (containsFinalRecommendations && asksForEmail) {
-      setFinalRecommendationsResponded(true);
-      if (response.toLowerCase().includes('yes')) {
+    if (containsFinalRecommendations && !finalRecommendationReplied) {
+      if (response.toLowerCase() === 'oui') {
         setShowEmailPrompt(true);
-      } else if (response.toLowerCase().includes('no')) {
-        handleSendMessage("No problem. Is there anything else I can help you with?");
+      } else {
+        handleSendMessage("D'accord. Merci pour votre temps.");
       }
-      setSuggestions([]); // Clear suggestions after responding to final recommendations
+      setFinalRecommendationReplied(true);
+      setSuggestions([]);
     } else {
       handleSendMessage(response);
     }
-  }, [containsFinalRecommendations, asksForEmail, handleSendMessage]);
+  }, [containsFinalRecommendations, finalRecommendationReplied, handleSendMessage]);
 
   const handleEmailSubmit = async (email: string) => {
-    // Handle email submission logic here
-    // You can call the send-transcript endpoint with the email and conversation data
-    // After successful email sending, you can close the email prompt
     setShowEmailPrompt(false);
-    handleSendMessage("Thank you for providing your email. The relationship plan has been sent. Is there anything else I can help you with?");
+    
+    // Find the last message containing final recommendations
+    const finalRecommendationsMessage = messages
+      .slice()
+      .reverse()
+      .find(msg => msg.role === 'assistant' && msg.content.toLowerCase().includes('final recommendations'));
+
+    let finalRecommendations = '';
+    if (finalRecommendationsMessage) {
+      // Extract the final recommendations section
+      const content = finalRecommendationsMessage.content;
+      const startIndex = content.toLowerCase().indexOf('final recommendations');
+      if (startIndex !== -1) {
+        finalRecommendations = content.slice(startIndex);
+      }
+    }
+
+    if (!finalRecommendations) {
+      console.error('No final recommendations found in the conversation');
+      handleSendMessage("Désolé, je n'ai pas pu trouver les recommandations finales. Pouvez-vous me demander de les fournir à nouveau ?");
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/send-transcript', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, conversationId, finalRecommendations }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to send email');
+      }
+
+      handleSendMessage("Merci d'avoir fourni votre adresse e-mail. Les recommandations finales ont été envoyées. Y a-t-il autre chose dont vous aimeriez discuter ?");
+    } catch (error) {
+      console.error('Error sending email:', error);
+      handleSendMessage("Désolé, il y a eu un problème lors de l'envoi de l'e-mail. Pouvez-vous réessayer plus tard ?");
+    }
   };
 
   useEffect(() => {
@@ -204,11 +258,11 @@ export function TherapyDashboard() {
           await handleSendMessage(JSON.stringify(initialContext), true);
         } catch (error) {
           console.error('Error parsing context:', error);
-          setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }]);
+          setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
         }
       } else {
         console.log('Missing context');
-        setMessages([{ role: 'assistant', content: "Hello! I'm Coopleo, your relationship advisor. What's your name?" }]);
+        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
       }
     };
 
@@ -217,7 +271,9 @@ export function TherapyDashboard() {
 
   const handleEmailPromptClose = useCallback(() => {
     setShowEmailPrompt(false);
-  }, []);
+    // Invisible prompt to end the conversation nicely after email prompt is closed
+    handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
+  }, [handleSendMessage]);
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -293,19 +349,38 @@ export function TherapyDashboard() {
                     </Avatar>
                   )}
                 </div>
-                {msg.role === 'assistant' && index === messages.length - 1 && suggestions.length > 0 && !finalRecommendationsResponded && (
-                  <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
-                    {suggestions.map((suggestion, sugIndex) => (
-                      <button
-                        key={sugIndex}
-                        onClick={() => handleUserResponse(suggestion)}
-                        className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
-                      >
-                        <span className="flex-grow mr-2">{suggestion.trim()}</span>
-                        <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
-                      </button>
-                    ))}
-                  </div>
+                {msg.role === 'assistant' && index === messages.length - 1 && (
+                  <>
+                    {showFinalOptions ? (
+                      <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
+                        {['Oui', 'Non'].map((option, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleFinalOptionResponse(option)}
+                            className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
+                          >
+                            <span className="flex-grow mr-2">{option}</span>
+                            <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      suggestions.length > 0 && (
+                        <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
+                          {suggestions.map((suggestion, sugIndex) => (
+                            <button
+                              key={sugIndex}
+                              onClick={() => handleUserResponse(suggestion)}
+                              className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
+                            >
+                              <span className="flex-grow mr-2">{suggestion}</span>
+                              <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      )
+                    )}
+                  </>
                 )}
               </div>
             ))}
@@ -316,7 +391,7 @@ export function TherapyDashboard() {
                   <AvatarFallback>AI</AvatarFallback>
                 </Avatar>
                 <div className="bg-muted rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-muted-foreground shadow-sm mr-12">
-                  Gathering knowledge...
+                  Analyse en cours...
                 </div>
               </div>
             )}
@@ -327,23 +402,23 @@ export function TherapyDashboard() {
       <div className="p-2 sm:p-4 bg-white">
         <form onSubmit={(e) => {
           e.preventDefault()
-          if (inputMessage.trim()) handleUserResponse(inputMessage)
+          if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)
         }} className="relative">
           <Textarea
             value={inputMessage}
             onChange={handleInputChange}
             onKeyPress={handleKeyPress}
-            placeholder="Type your message here..."
+            placeholder="Tapez votre message ici..."
             className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
-            disabled={isTyping || isReasoning || showEmailPrompt}
+            disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
           />
           <Button 
             type="submit" 
             size="icon" 
             className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-            disabled={isTyping || !inputMessage.trim() || isReasoning || showEmailPrompt}
+            disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
           >
-            {isTyping || isReasoning ? (
+            {isTyping ? (
               <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
             ) : (
               <ArrowUpIcon className="h-3 w-3 sm:h-4 sm:w-4" />
@@ -357,7 +432,11 @@ export function TherapyDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <EmailPrompt 
             conversationId={conversationId} 
-            onClose={handleEmailPromptClose}
+            onClose={() => {
+              setShowEmailPrompt(false);
+              // Invisible prompt to end the conversation nicely after email prompt is closed
+              handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
+            }}
           />
         </div>
       )}

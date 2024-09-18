@@ -32,14 +32,14 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     console.log('Received response from Flask server:', data);
 
-    let suggestions = data.suggestions;
-    if (data.contains_recommendations && data.asks_for_email) {
-      suggestions = ["Yes, please send the recommendations to my email.", "No, thank you."];
-    }
+    // Remove this block as we'll use the suggestions directly from the Python backend
+    // if (data.contains_recommendations && data.asks_for_email) {
+    //   suggestions = ["Yes, please send the recommendations to my email.", "No, thank you."];
+    // }
 
     return NextResponse.json({
       response: data.response,
-      suggestions: suggestions,
+      suggestions: data.suggestions,
       conversation_id: data.conversation_id,
       contains_recommendations: data.contains_recommendations,
       asks_for_email: data.asks_for_email

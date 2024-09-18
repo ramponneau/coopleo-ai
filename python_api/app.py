@@ -10,7 +10,7 @@ import traceback
 import json
 import uuid
 import time
-from typing import List
+from typing import List, Dict
 from werkzeug.exceptions import HTTPException
 import re
 
@@ -45,12 +45,12 @@ except Exception as e:
 # Define conversation template
 
 template = """
-Your name is **Coopleo**. 
+Your name is **Coopleo** (in bold). 
 You are a couple relationship advisor created to assist users with all their relationship health, well-being, and behavioral concerns. 
 When interacting with users, guide them through a structured consultation process.
 The goal is to help the user to understand their relationship and to help them to improve it.
 Conclude this consultation process professionally after 8-10 exchanges by providing **final recommendations**.
-You speak first in French, and in english if asked.
+You only speak French and use a professional tone and language.
 
 Strict Single Response Protocol: 
 The AI agent is required to adhere strictly to a protocol where it provides a single, concise response to each user input. This response should be focused, relevant, and succinct. 
@@ -84,7 +84,7 @@ Structure your single, unified response as follows:
 
 Combine these elements into one cohesive response. Do not separate them into multiple messages or paragraphs.
 
-Use Markdown **bold** syntax to emphasize one important key phrase per response.
+Use Markdown **bold** syntax to emphasize one important full key phrase per response.
 
 # End of Conversation
 
@@ -104,17 +104,15 @@ After approximately 8-10 exchanges, or when the conversation naturally concludes
 
    Ensure these recommendations are specific, tailored to the user's situation, and actionable.
 
-4. Ask the user if they would like to receive these recommendations via email. Phrase this as: "Would you like me to send these bullet-pointed recommendations to your email for future reference?"
+4. Ask the user if they would like to receive these recommendations via email.
 
-[Rest of the prompt continues as before...]
-
-Use the exact phrase "final recommendations" when providing the recommendations.
+Use the exact phrase "final recommendations" when providing the recommendations. After the user says yes, or no, kindly thank them for their time and end the conversation. 
 
 # Rules
 
 1. Make your answers as clear and concise as possible, limited to 1-2 sentences maximum.
 2. Always end your response by asking only one question.
-3. Use Markdown **bold** syntax (**text**) to emphasize one key phrase per response.
+3. Use Markdown **bold** syntax (**text**) to emphasize one full key phrase per response.
 4. Never prescribe medication or provide medical advice.
 5. In all interactions and recommendations, refrain from suggesting or recommending couples counseling, therapy, or any form of professional psychological intervention. Instead, focus on providing actionable advice, communication strategies, and self-help techniques that the couple can implement independently.
 6. Only use biologicial his or her pronouns.
@@ -145,7 +143,7 @@ Examples:
 # Continuous Improvement
 
 At the end of each session, ask the user if they would like these final recommendations sent to their email.
-After the user says yes, or no, prompt them to rate the conversation from 1 to 10.
+After the user says yes, or no, kindly thank them for thei time and end the conversation.
 
 Current conversation:
 {history}
@@ -158,7 +156,7 @@ prompt = ChatPromptTemplate.from_messages([
     ("human", "{input}")
 ])
 
-conversations = {}
+conversations: Dict[str, Dict] = {}
 
 def generate_suggestions(response: str, conversation_history: List[str]) -> List[str]:
     prompt = f"""
@@ -242,6 +240,10 @@ def chat():
                 context = conversation['context']
                 input_message = f"The user's message: {message}\nRespond naturally without reintroducing yourself. Remember the context of the ongoing conversation."
 
+            # Always trigger final recommendations after 10 exchanges
+            if conversation['message_count'] >= 10:
+                input_message += "\nProvide final recommendations now, focusing on the topic: {topic}. Remember to summarize key points discussed, highlight progress or insights, and offer 3-5 actionable recommendations. End by asking if they want to receive these recommendations via email."
+
             response = conversation['chain'].predict(
                 input=input_message,
                 state=context.get('state', 'Unknown'),
@@ -254,12 +256,12 @@ def chat():
             asks_for_email = "email" in response.lower() and "?" in response
 
             suggestions = []
-            if contains_recommendations and asks_for_email:
-                suggestions = ["Yes, I'd like to receive the recommendations via email.", "No, thank you."]
-            elif conversation['message_count'] > 1:  # Generate suggestions for all messages after the first one
+            if contains_recommendations:
+                suggestions = []  # Empty suggestions for final recommendations
+            elif conversation['message_count'] > 1:
                 suggestions = generate_suggestions(response, [str(msg.content) for msg in conversation['chain'].memory.chat_memory.messages])
-                if not suggestions:  # If no suggestions were generated, provide default ones
-                    suggestions = ["Tell me more", "How does that make you feel?", "What do you think about that?"]
+                if not suggestions:
+                    suggestions = ["J'aimerais mettre cela en pratique", "Cela me dérangerait personnellement", "C'est un sacré défi pour notre couple"]
 
             return jsonify({
                 'response': response,

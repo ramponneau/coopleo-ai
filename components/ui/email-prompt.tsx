@@ -17,7 +17,7 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
   const [email, setEmail] = useState('')
   const [isValid, setIsValid] = useState(true)
   const [isSending, setIsSending] = useState(false)
-  const [error, setError] = useState<string | null>(null);
+  const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const cardRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -37,7 +37,7 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setError(null);
+    setStatus('idle');
     if (isValidEmail(email)) {
       setIsSending(true)
       try {
@@ -52,14 +52,14 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
         const data = await response.json();
 
         if (!response.ok) {
-          throw new Error(data.error || 'Failed to send email');
+          throw new Error(data.error || 'Échec de l\'envoi de l\'e-mail');
         }
 
-        console.log('Email sent successfully:', data);
-        onClose();
+        console.log('E-mail envoyé avec succès:', data);
+        setStatus('success');
       } catch (error: any) {
-        console.error('Error sending transcript:', error);
-        setError(`Failed to send email. Please try again.`);
+        console.error('Erreur lors de l\'envoi du parcours:', error);
+        setStatus('error');
       } finally {
         setIsSending(false)
       }
@@ -71,59 +71,64 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value)
     setIsValid(true)
+    setStatus('idle');
   }
 
   const isValidEmail = (email: string) => {
     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)
   }
 
-  const handleOverlayClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      e.preventDefault();
-      e.stopPropagation();
-      onClose();
-    }
-  }
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <Card className="w-full max-w-[90%] sm:max-w-md mx-auto" ref={cardRef}>
-        <CardHeader className="space-y-2">
-          <CardTitle className="text-xl sm:text-2xl font-bold">Receive Relationship Plan</CardTitle>
-          <CardDescription className="text-sm sm:text-base">Please enter your email address to receive your personalized relationship plan</CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                  <Input
-                    id="email"
-                    placeholder="you@example.com"
-                    type="email"
-                    value={email}
-                    onChange={handleChange}
-                    className={`pl-10 ${!isValid ? 'border-red-500' : ''} text-sm sm:text-base`}
-                  />
-                </div>
-                {!isValid && (
-                  <p className="text-xs sm:text-sm text-red-500">Please enter a valid email address</p>
-                )}
-                {error && (
-                  <p className="text-xs sm:text-sm text-red-500 mt-2">{error}</p>
-                )}
+    <Card className="w-full max-w-[90%] sm:max-w-md mx-auto" ref={cardRef}>
+      <CardHeader className="space-y-2">
+        <CardTitle className="text-xl sm:text-2xl font-bold">Recevoir mon parcours personnalisé</CardTitle>
+        <CardDescription className="text-sm sm:text-base">
+          Suite à notre discussion proactive sur la gestion de votre couple, vous recevrez vos recommandations finales dans votre boîte mail.
+        </CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent>
+          <div className="grid w-full items-center gap-4">
+            <div className="flex flex-col space-y-1.5">
+              <Label htmlFor="email" className="text-sm sm:text-base">Adresse mail</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                <Input
+                  id="email"
+                  placeholder="votre@adressemail.com"
+                  type="email"
+                  value={email}
+                  onChange={handleChange}
+                  className={`pl-10 ${!isValid ? 'border-red-500' : ''} text-sm sm:text-base`}
+                />
               </div>
+              {!isValid && (
+                <p className="text-xs sm:text-sm text-red-500">Veuillez entrer une adresse e-mail valide</p>
+              )}
+              {status === 'error' && (
+                <p className="text-xs sm:text-sm text-red-500 mt-2">Échec de l'envoi de l'e-mail. Veuillez réessayer.</p>
+              )}
+              {status === 'success' && (
+                <p className="text-xs sm:text-sm text-green-500 mt-2">E-mail envoyé avec succès !</p>
+              )}
             </div>
-          </CardContent>
-          <CardFooter>
-            <Button type="submit" className="w-full text-sm sm:text-base" disabled={isSending}>
-              {isSending ? 'Sending...' : 'Email My Results'}
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button 
+            type="submit" 
+            className="w-full text-sm sm:text-base" 
+            disabled={isSending}
+            onClick={() => {
+              if (status === 'success') {
+                onClose();
+              }
+            }}
+          >
+            {isSending ? 'Envoi en cours...' : status === 'success' ? 'Fermer' : 'Recevoir mon parcours'}
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   )
 }

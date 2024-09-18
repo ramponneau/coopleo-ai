@@ -7,29 +7,23 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {
   try {
-    const { email, conversationId } = await req.json();
-
-    // Fetch conversation from your database or API
-    const conversation = await fetchConversation(conversationId);
-
-    // Generate transcript
-    const transcript = generateTranscript(conversation);
+    const { email, conversationId, finalRecommendations } = await req.json();
 
     console.log('Attempting to send email to:', email);
-    console.log('Transcript:', transcript);
+    console.log('Final Recommendations:', finalRecommendations);
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({
-      from: 'Coopleo <bonjour@ramponneau.com>',
+      from: 'Coopleo IA <bonjour@ramponneau.com>',
       to: email,
-      subject: 'Votre plan sur-mesure de gestion de votre couple',
+      subject: 'Votre parcours personnalisé Coopleo',
       html: `
-        <h1>Your Relationship Plan</h1>
-        <p>Here's a summary of your recent conversation and recommendations:</p>
-        <pre>${transcript}</pre>
+        <p>Sur la base de notre précédente session, voici les recommandations pour votre couple :</p>
+        <h2>Recommandations Finales</h2>
+        <div>${finalRecommendations}</div>
         <p>
           <a href="${process.env.NEXT_PUBLIC_BASE_URL}/continue/${conversationId}">
-            Continue Your Session
+            Continuer Votre Session
           </a>
         </p>
       `,
@@ -44,7 +38,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ success: true, data });
   } catch (error) {
     console.error('Error in /api/send-transcript:', error);
-    return NextResponse.json({ error: 'An error occurred sending the transcript', details: error }, { status: 500 });
+    return NextResponse.json({ error: 'An error occurred sending the recommendations', details: error }, { status: 500 });
   }
 }
 

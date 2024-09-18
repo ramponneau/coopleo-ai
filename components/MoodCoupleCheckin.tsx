@@ -13,27 +13,27 @@ interface Item {
 }
 
 const states: Item[] = [
-  { icon: '☀️', label: 'Thriving' },
+  { icon: '☀️', label: 'Épanoui' },
   { icon: '🌥', label: 'Stable' },
-  { icon: '🌨', label: 'Struggling' },
-  { icon: '⚡️', label: 'Tense' },
+  { icon: '🌨', label: 'En difficulté' },
+  { icon: '⚡️', label: 'Tendu' },
   { icon: '🌪', label: 'Turbulent' }
 ];
 const moods: Item[] = [
-  { icon: '😊', label: 'Happy' },
-  { icon: '😢', label: 'Sad' },
-  { icon: '😍', label: 'In Love' },
-  { icon: '😡', label: 'Angry' },
-  { icon: '🤔', label: 'Thoughtful' }
+  { icon: '😊', label: 'Heureux' },
+  { icon: '😢', label: 'Triste' },
+  { icon: '😍', label: 'Amoureux' },
+  { icon: '😡', label: 'En colère' },
+  { icon: '🤔', label: 'Pensif' }
 ];
 const locations: Item[] = [
-  { icon: '🏠', label: 'Home' },
-  { icon: '🏢', label: 'Work' },
-  { icon: '🌳', label: 'Outdoors' },
+  { icon: '🏠', label: 'Maison' },
+  { icon: '🏢', label: 'Travail' },
+  { icon: '🌳', label: 'Extérieur' },
   { icon: '🏋️', label: 'Sport' },
-  { icon: '🚇', label: 'Transit' }
+  { icon: '🚇', label: 'En déplacement' }
 ];
-const topics = ['Communication', 'Trust', 'Intimacy', 'Conflict Resolution', 'Quality Time', 'Future Planning'];
+const topics = ['Communication', 'Confiance', 'Intimité', 'Résolution de conflits', 'Moments de qualité', "Projets d'avenir"];
 
 export function MoodCoupleCheckin() {
   const [state, setState] = useState('');
@@ -45,7 +45,7 @@ export function MoodCoupleCheckin() {
 
   const handleSubmit = async () => {
     if (!state || !mood || !location || !topic) {
-      alert("Please select all options before proceeding.");
+      alert("Merci de sélectionner toutes les options.");
       return;
     }
 
@@ -118,21 +118,21 @@ export function MoodCoupleCheckin() {
               <PopoverContent className="max-w-[500px] p-4 rounded-md shadow-lg bg-background border">
                 <div className="flex flex-col gap-3">
                   <div className="space-y-1">
-                    <h3 className="text-lg font-bold">Relationship Guidance for Couples</h3>
+                    <h3 className="text-lg font-bold">Coopleo IA</h3>
                     <p className="text-sm text-muted-foreground">
-                      Coopleo is a 100% digital relationship counselor for couples. We offer a natural and proactive conversation experience that helps couples thrive.
+                      Coopleo aide les couples à anticiper et résoudre les problèmes avant qu'ils ne s'aggravent. Nous vous proposons une expérience de conversation naturelle et proactive pour vous permettre de gérer au quotidien les défis de votre relation.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-base font-medium">How it works</h4>
+                    <h4 className="text-base font-medium">Comment ça marche</h4>
                     <p className="text-sm text-muted-foreground">
-                      Select options that best describe your current relationship, and we'll guide you through simple and actionable steps to improve your connection.
+                      Choisissez les options qui décrivent le mieux votre relation actuelle, et nous vous guiderons à travers des étapes simples et concrètes pour améliorer votre relation de couple.
                     </p>
                   </div>
                   <div className="space-y-1">
-                    <h4 className="text-base font-medium">Privacy</h4>
+                    <h4 className="text-base font-medium">Confidentialité</h4>
                     <p className="text-sm text-muted-foreground">
-                      Your conversations are confidential and secure. We prioritize your privacy at every step.
+                      Vos conversations sont confidentielles et sécurisées. Nous priorisons votre vie privée à chaque étape.
                     </p>
                   </div>
                 </div>
@@ -142,7 +142,7 @@ export function MoodCoupleCheckin() {
           
           <div className="space-y-8 sm:space-y-10 text-center">
             <div>
-              <p className="text-base sm:text-lg mb-4 sm:mb-6">How is the current state of your relationship?</p>
+              <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment va votre couple aujourd'hui ?</p>
               <div className="flex justify-center items-center space-x-4 sm:space-x-6">
                 {states.map((s) => (
                   <IconButton key={s.icon} item={s} selected={state === s.icon} onClick={setState} />
@@ -151,7 +151,7 @@ export function MoodCoupleCheckin() {
             </div>
 
             <div>
-              <p className="text-base sm:text-lg mb-4 sm:mb-6">How are you feeling in this moment?</p>
+              <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment vous sentez-vous en ce moment ?</p>
               <div className="flex justify-center items-center space-x-4 sm:space-x-6">
                 {moods.map((m) => (
                   <IconButton key={m.icon} item={m} selected={mood === m.icon} onClick={setMood} />
@@ -160,7 +160,7 @@ export function MoodCoupleCheckin() {
             </div>
 
             <div>
-              <p className="text-base sm:text-lg mb-4 sm:mb-6">Where are you right now?</p>
+              <p className="text-base sm:text-lg mb-4 sm:mb-6">Que faites-vous actuellement ?</p>
               <div className="flex justify-center items-center space-x-4 sm:space-x-6">
                 {locations.map((loc) => (
                   <IconButton key={loc.icon} item={loc} selected={location === loc.icon} onClick={setLocation} />
@@ -169,7 +169,7 @@ export function MoodCoupleCheckin() {
             </div>
 
             <div>
-              <p className="text-base sm:text-lg mb-4 sm:mb-6">What relationship topic do you want to focus on?</p>
+              <p className="text-base sm:text-lg mb-4 sm:mb-6">Quel sujet souhaitez-vous traiter ?</p>
               <div className="flex flex-wrap justify-center gap-2 max-w-md mx-auto">
                 {topics.map((t) => (
                   <Button
@@ -206,10 +206,10 @@ export function MoodCoupleCheckin() {
               {isLoading ? (
                 <div className="flex items-center justify-center">
                   <LoaderIcon className="animate-spin mr-2" />
-                  Getting recommendation...
+                  Démarrer le parcours
                 </div>
               ) : (
-                'Get recommendation'
+                'Démarrer le parcours'
               )}
             </Button>
           </div>
