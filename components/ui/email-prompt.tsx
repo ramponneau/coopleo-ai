@@ -86,42 +86,44 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
   }
 
   return (
-    <Card className="w-full max-w-md mx-auto" ref={cardRef}>
-      <CardHeader>
-        <CardTitle className="text-2xl font-bold">Receive Relationship Plan</CardTitle>
-        <CardDescription>Please enter your email address to receive your personalized relationship plan</CardDescription>
-      </CardHeader>
-      <form onSubmit={handleSubmit}>
-        <CardContent>
-          <div className="grid w-full items-center gap-4">
-            <div className="flex flex-col space-y-1.5">
-              <Label htmlFor="email">Email</Label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
-                <Input
-                  id="email"
-                  placeholder="you@example.com"
-                  type="email"
-                  value={email}
-                  onChange={handleChange}
-                  className={`pl-10 ${!isValid ? 'border-red-500' : ''}`}
-                />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <Card className="w-full max-w-[90%] sm:max-w-md mx-auto" ref={cardRef}>
+        <CardHeader className="space-y-2">
+          <CardTitle className="text-xl sm:text-2xl font-bold">Receive Relationship Plan</CardTitle>
+          <CardDescription className="text-sm sm:text-base">Please enter your email address to receive your personalized relationship plan</CardDescription>
+        </CardHeader>
+        <form onSubmit={handleSubmit}>
+          <CardContent>
+            <div className="grid w-full items-center gap-4">
+              <div className="flex flex-col space-y-1.5">
+                <Label htmlFor="email" className="text-sm sm:text-base">Email</Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-500" />
+                  <Input
+                    id="email"
+                    placeholder="you@example.com"
+                    type="email"
+                    value={email}
+                    onChange={handleChange}
+                    className={`pl-10 ${!isValid ? 'border-red-500' : ''} text-sm sm:text-base`}
+                  />
+                </div>
+                {!isValid && (
+                  <p className="text-xs sm:text-sm text-red-500">Please enter a valid email address</p>
+                )}
+                {error && (
+                  <p className="text-xs sm:text-sm text-red-500 mt-2">{error}</p>
+                )}
               </div>
-              {!isValid && (
-                <p className="text-sm text-red-500">Please enter a valid email address</p>
-              )}
-              {error && (
-                <p className="text-sm text-red-500 mt-2">{error}</p>
-              )}
             </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button type="submit" className="w-full" disabled={isSending}>
-            {isSending ? 'Sending...' : 'Email My Results'}
-          </Button>
-        </CardFooter>
-      </form>
-    </Card>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full text-sm sm:text-base" disabled={isSending}>
+              {isSending ? 'Sending...' : 'Email My Results'}
+            </Button>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   )
 }

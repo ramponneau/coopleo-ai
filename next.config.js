@@ -1,12 +1,10 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  async rewrites() {
-    return [
-      {
-        source: '/api/:path*',
-        destination: 'http://localhost:5000/:path*', // Proxy to Flask Backend
-      },
-    ]
+  experimental: {
+    serverComponentsExternalPackages: ['@prisma/client'],
+  },
+  env: {
+    RESEND_API_KEY: process.env.RESEND_API_KEY,
   },
 }
 
