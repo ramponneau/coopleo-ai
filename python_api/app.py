@@ -60,6 +60,10 @@ def reset_conversation():
     # Your reset conversation logic here
     pass
 
+def chat(data):
+    # Your chat logic here
+    pass
+
 # Make sure to export the app
 app = app
 

@@ -65,12 +65,17 @@ export function MoodCoupleCheckin() {
         body: JSON.stringify({ message: JSON.stringify(initialContext), isInitialContext: true }),
       });
 
+      console.log('Response status:', response.status);
+      console.log('Response headers:', response.headers);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Error response:', errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
-      console.log('Initial context sent, response:', data);
+      console.log('Received data:', data);
 
       const encodedContext = encodeURIComponent(JSON.stringify({
         initialContext,
@@ -82,6 +87,7 @@ export function MoodCoupleCheckin() {
     } catch (error) {
       console.error('Error sending initial context:', error);
       alert('An error occurred. Please try again.');
+    } finally {
       setIsLoading(false);
     }
   };

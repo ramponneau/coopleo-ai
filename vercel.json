@@ -4,13 +4,23 @@
       {
         "src": "api/index.py",
         "use": "@vercel/python",
-        "config": { "runtime": "python3.9" }
+        "config": { 
+          "runtime": "python3.9"
+        }
+      },
+      {
+        "src": "package.json",
+        "use": "@vercel/next"
       }
     ],
     "routes": [
       {
-        "src": "/(.*)",
+        "src": "/api/(.*)",
         "dest": "api/index.py"
+      },
+      {
+        "src": "/(.*)",
+        "dest": "/$1"
       }
     ]
   }
