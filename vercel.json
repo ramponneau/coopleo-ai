@@ -1,24 +1,16 @@
 {
     "version": 2,
-    "scope": "ramponneaus-projects",
     "builds": [
       {
         "src": "api/index.py",
-        "use": "@vercel/python"
-      },
-      {
-        "src": "package.json",
-        "use": "@vercel/next"
+        "use": "@vercel/python",
+        "config": { "runtime": "python3.9" }
       }
     ],
     "routes": [
       {
-        "src": "/api/(.*)",
-        "dest": "api/index.py"
-      },
-      {
         "src": "/(.*)",
-        "dest": "/$1"
+        "dest": "api/index.py"
       }
     ]
   }
