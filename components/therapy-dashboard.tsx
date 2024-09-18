@@ -57,23 +57,23 @@ export function TherapyDashboard() {
   const [isFinalRecommendationShown, setIsFinalRecommendationShown] = useState(false);
   const [showFinalOptions, setShowFinalOptions] = useState(false);
 
-  const handleSendMessage = useCallback(async (message: string, isInitialContext: boolean = false) => {
-    if (isTyping || isFinalRecommendationShown) return;
+  const handleSendMessage = useCallback(async (message: string, isInvisiblePrompt: boolean = false) => {
+    if (isTyping || (isFinalRecommendationShown && !isInvisiblePrompt)) return;
     setIsTyping(true);
     setSuggestions([]);
-    if (!isInitialContext) {
+    if (!isInvisiblePrompt) {
       setMessages(prev => [...prev, { role: 'user', content: message }]);
       setInputMessage('');
     }
 
     try {
-      console.log('Sending message:', { message, isInitialContext, context });
+      console.log('Sending message:', { message, isInvisiblePrompt, context });
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           message, 
-          isInitialContext, 
+          isInitialContext: isInvisiblePrompt, 
           conversation_id: conversationId,
           context: context 
         }),
@@ -91,17 +91,15 @@ export function TherapyDashboard() {
         setMessages(prev => [...prev, { role: 'assistant', content: data.response }]);
         setMessageCount(prev => prev + 1);
       }
-      
+
       setContainsFinalRecommendations(data.contains_recommendations);
       setAsksForEmail(data.asks_for_email);
 
       if (data.contains_recommendations) {
+        setSuggestions(["Oui, veuillez envoyer ces recommandations par mail", "Non, merci"]);
         setShowFinalOptions(true);
-        setSuggestions(["Oui", "Non"]);
-      } else if (!isInitialContext && data.suggestions && data.suggestions.length > 0) {
+      } else if (!isInvisiblePrompt) {
         setSuggestions(data.suggestions);
-      } else {
-        setSuggestions([]);
       }
 
       if (data.conversation_id) {
@@ -120,12 +118,11 @@ export function TherapyDashboard() {
     if (response.toLowerCase() === 'oui') {
       setShowEmailPrompt(true);
     } else {
-      // Invisible prompt to end the conversation nicely
-      handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Je comprends. Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
     }
     setShowFinalOptions(false);
     setIsFinalRecommendationShown(true);
-  }, [handleSendMessage]);
+  }, []);
 
   const formatMessage = (content: string, isAIResponse: boolean) => {
     if (!isAIResponse) return content;
@@ -177,18 +174,17 @@ export function TherapyDashboard() {
   }
 
   const handleUserResponse = useCallback((response: string) => {
-    if (containsFinalRecommendations && !finalRecommendationReplied) {
+    if (containsFinalRecommendations) {
       if (response.toLowerCase() === 'oui') {
         setShowEmailPrompt(true);
       } else {
         handleSendMessage("D'accord. Merci pour votre temps.");
       }
-      setFinalRecommendationReplied(true);
-      setSuggestions([]);
+      setShowFinalOptions(false);
     } else {
       handleSendMessage(response);
     }
-  }, [containsFinalRecommendations, finalRecommendationReplied, handleSendMessage]);
+  }, [containsFinalRecommendations, handleSendMessage]);
 
   const handleEmailSubmit = async (email: string) => {
     setShowEmailPrompt(false);
@@ -211,7 +207,7 @@ export function TherapyDashboard() {
 
     if (!finalRecommendations) {
       console.error('No final recommendations found in the conversation');
-      handleSendMessage("Désolé, je n'ai pas pu trouver les recommandations finales. Pouvez-vous me demander de les fournir à nouveau ?");
+      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, je n'ai pas pu trouver les recommandations finales. Voici un message de clôture pour notre conversation." }]);
       return;
     }
 
@@ -228,10 +224,13 @@ export function TherapyDashboard() {
         throw new Error('Failed to send email');
       }
 
-      handleSendMessage("Merci d'avoir fourni votre adresse e-mail. Les recommandations finales ont été envoyées. Y a-t-il autre chose dont vous aimeriez discuter ?");
+      // Add a closing message without sending another request
+      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps. Les recommandations ont été envoyées à votre adresse e-mail. J'espère que notre conversation vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setIsFinalRecommendationShown(true);
     } catch (error) {
       console.error('Error sending email:', error);
-      handleSendMessage("Désolé, il y a eu un problème lors de l'envoi de l'e-mail. Pouvez-vous réessayer plus tard ?");
+      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, il y a eu un problème lors de l'envoi de l'e-mail. Cependant, je vous remercie pour notre conversation. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setIsFinalRecommendationShown(true);
     }
   };
 
@@ -271,9 +270,9 @@ export function TherapyDashboard() {
 
   const handleEmailPromptClose = useCallback(() => {
     setShowEmailPrompt(false);
-    // Invisible prompt to end the conversation nicely after email prompt is closed
-    handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
-  }, [handleSendMessage]);
+    setMessages(prev => [...prev, { role: 'assistant', content: "Je comprends. Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+    setIsFinalRecommendationShown(true);
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-white">
@@ -349,23 +348,26 @@ export function TherapyDashboard() {
                     </Avatar>
                   )}
                 </div>
-                {msg.role === 'assistant' && index === messages.length - 1 && (
+                {msg.role === 'assistant' && index === messages.length - 1 && !isFinalRecommendationShown && (
                   <>
-                    {showFinalOptions ? (
+                    {showFinalOptions && !msg.content.toLowerCase().includes('au revoir') ? (
                       <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
-                        {['Oui', 'Non'].map((option, index) => (
+                        {[
+                          { text: "Oui, veuillez envoyer ces recommandations par mail", value: "Oui" },
+                          { text: "Non, merci", value: "Non" }
+                        ].map((option, index) => (
                           <button
                             key={index}
-                            onClick={() => handleFinalOptionResponse(option)}
+                            onClick={() => handleFinalOptionResponse(option.value)}
                             className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
                           >
-                            <span className="flex-grow mr-2">{option}</span>
+                            <span className="flex-grow mr-2">{option.text}</span>
                             <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
                           </button>
                         ))}
                       </div>
                     ) : (
-                      suggestions.length > 0 && (
+                      suggestions.length > 0 && !msg.content.toLowerCase().includes('au revoir') && (
                         <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
                           {suggestions.map((suggestion, sugIndex) => (
                             <button
@@ -432,11 +434,7 @@ export function TherapyDashboard() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <EmailPrompt 
             conversationId={conversationId} 
-            onClose={() => {
-              setShowEmailPrompt(false);
-              // Invisible prompt to end the conversation nicely after email prompt is closed
-              handleSendMessage("Please provide a final closing message to end the conversation politely.", true);
-            }}
+            onClose={handleEmailPromptClose}
           />
         </div>
       )}

@@ -252,8 +252,12 @@ def chat():
                 topic=context.get('topic', 'relationships in general')
             )
 
-            contains_recommendations = "final recommendations" in response.lower()
+            contains_recommendations = any(phrase in response.lower() for phrase in ["final recommendations", "recommandations finales"])
             asks_for_email = "email" in response.lower() and "?" in response
+
+            print(f"Response: {response}")
+            print(f"Contains recommendations: {contains_recommendations}")
+            print(f"Asks for email: {asks_for_email}")
 
             suggestions = []
             if contains_recommendations:
