@@ -110,120 +110,123 @@ export function MoodCoupleCheckin() {
 
   return (
     <>
-      {isLoading && <SplashScreen />}
-      <TooltipProvider>
-        <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black px-8 sm:px-12 md:px-16 py-16 sm:py-20" style={{ fontFamily: 'Arial, sans-serif' }}>
-          <div className="w-full max-w-xl">
-            <div className="flex items-center justify-between mb-10 sm:mb-12">
-              <Image src="/coopleo-logo.svg" alt="Coopleo Logo" width={180} height={45} className="w-2/5 sm:w-1/3 h-auto" />
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <InfoIcon className="w-5 h-5" />
-                    <span className="sr-only">More info</span>
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="max-w-[500px] p-4 rounded-md shadow-lg bg-background border">
-                  <div className="flex flex-col gap-3">
-                    <div className="space-y-1">
-                      <h3 className="text-lg font-bold">Coopleo IA</h3>
-                      <p className="text-sm text-muted-foreground">
-                        Coopleo aide les couples à anticiper et résoudre les problèmes avant qu'ils ne s'aggravent. Nous vous proposons une expérience de conversation naturelle et proactive pour gérer au quotidien les défis de votre relation.
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-base font-medium">Comment ça marche</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Choisissez les options qui décrivent le mieux votre relation actuelle, et nous vous guiderons à travers des étapes simples et concrètes pour améliorer votre relation de couple.
-                      </p>
-                    </div>
-                    <div className="space-y-1">
-                      <h4 className="text-base font-medium">Confidentialité</h4>
-                      <p className="text-sm text-muted-foreground">
-                        Vos conversations sont confidentielles et sécurisées. Nous priorisons votre vie privée à chaque étape.
-                      </p>
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            </div>
-            
-            <div className="space-y-8 sm:space-y-10 text-center">
-              <div>
-                <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment va votre couple aujourd'hui ?</p>
-                <div className="flex justify-center items-center space-x-4 sm:space-x-6">
-                  {states.map((s) => (
-                    <IconButton key={s.icon} item={s} selected={state === s.icon} onClick={setState} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment vous sentez-vous en ce moment ?</p>
-                <div className="flex justify-center items-center space-x-4 sm:space-x-6">
-                  {moods.map((m) => (
-                    <IconButton key={m.icon} item={m} selected={mood === m.icon} onClick={setMood} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-base sm:text-lg mb-4 sm:mb-6">Que faites-vous actuellement ?</p>
-                <div className="flex justify-center items-center space-x-4 sm:space-x-6">
-                  {locations.map((loc) => (
-                    <IconButton key={loc.icon} item={loc} selected={location === loc.icon} onClick={setLocation} />
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="text-base sm:text-lg mb-4 sm:mb-6">Quel sujet souhaitez-vous traiter ?</p>
-                <div className="flex flex-wrap justify-center gap-2 max-w-md mx-auto">
-                  {topics.map((t) => (
-                    <Button
-                      key={t}
-                      onClick={() => setTopic(t)}
-                      className={`
-                        ${topic === t 
-                          ? 'bg-black text-white' 
-                          : 'bg-white text-black'}
-                        border border-black rounded-full
-                        hover:bg-black hover:text-white
-                        transition-colors
-                        text-sm py-1 px-3
-                        flex items-center justify-center
-                      `}
-                    >
-                      {t}
+      {isLoading ? (
+        <SplashScreen />
+      ) : (
+        <TooltipProvider>
+          <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black px-8 sm:px-12 md:px-16 py-16 sm:py-20" style={{ fontFamily: 'Arial, sans-serif' }}>
+            <div className="w-full max-w-xl">
+              <div className="flex items-center justify-between mb-10 sm:mb-12">
+                <Image src="/coopleo-logo.svg" alt="Coopleo Logo" width={180} height={45} className="w-2/5 sm:w-1/3 h-auto" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <InfoIcon className="w-5 h-5" />
+                      <span className="sr-only">More info</span>
                     </Button>
-                  ))}
+                  </PopoverTrigger>
+                  <PopoverContent className="max-w-[500px] p-4 rounded-md shadow-lg bg-background border">
+                    <div className="flex flex-col gap-3">
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-bold">Coopleo IA</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Coopleo aide les couples à anticiper et résoudre les problèmes avant qu'ils ne s'aggravent. Nous vous proposons une expérience de conversation naturelle et proactive pour gérer au quotidien les défis de votre relation.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-base font-medium">Comment ça marche</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Choisissez les options qui décrivent le mieux votre relation actuelle, et nous vous guiderons à travers des étapes simples et concrètes pour améliorer votre relation de couple.
+                        </p>
+                      </div>
+                      <div className="space-y-1">
+                        <h4 className="text-base font-medium">Confidentialité</h4>
+                        <p className="text-sm text-muted-foreground">
+                          Vos conversations sont confidentielles et sécurisées. Nous priorisons votre vie privée à chaque étape.
+                        </p>
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              
+              <div className="space-y-8 sm:space-y-10 text-center">
+                <div>
+                  <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment va votre couple aujourd'hui ?</p>
+                  <div className="flex justify-center items-center space-x-4 sm:space-x-6">
+                    {states.map((s) => (
+                      <IconButton key={s.icon} item={s} selected={state === s.icon} onClick={setState} />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-base sm:text-lg mb-4 sm:mb-6">Comment vous sentez-vous en ce moment ?</p>
+                  <div className="flex justify-center items-center space-x-4 sm:space-x-6">
+                    {moods.map((m) => (
+                      <IconButton key={m.icon} item={m} selected={mood === m.icon} onClick={setMood} />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-base sm:text-lg mb-4 sm:mb-6">Que faites-vous actuellement ?</p>
+                  <div className="flex justify-center items-center space-x-4 sm:space-x-6">
+                    {locations.map((loc) => (
+                      <IconButton key={loc.icon} item={loc} selected={location === loc.icon} onClick={setLocation} />
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-base sm:text-lg mb-4 sm:mb-6">Quel sujet souhaitez-vous traiter ?</p>
+                  <div className="flex flex-wrap justify-center gap-2 max-w-md mx-auto">
+                    {topics.map((t) => (
+                      <Button
+                        key={t}
+                        onClick={() => setTopic(t)}
+                        className={`
+                          ${topic === t 
+                            ? 'bg-black text-white' 
+                            : 'bg-white text-black'}
+                          border border-black rounded-full
+                          hover:bg-black hover:text-white
+                          transition-colors
+                          text-sm py-1 px-3
+                          flex items-center justify-center
+                        `}
+                      >
+                        {t}
+                      </Button>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex justify-center mt-10 sm:mt-12">
-              <Button
-                onClick={handleSubmit}
-                disabled={isLoading}
-                className={`
-                  bg-black text-white hover:bg-gray-800 hover:scale-105 transition-all duration-200 
-                  w-full max-w-sm py-4 sm:py-6 text-base sm:text-lg rounded-full
-                  ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
-                `}
-              >
-                {isLoading ? (
-                  <div className="flex items-center justify-center">
-                    <LoaderIcon className="animate-spin mr-2" />
-                    Démarrer le parcours
-                  </div>
-                ) : (
-                  'Démarrer le parcours'
-                )}
-              </Button>
+              <div className="flex justify-center mt-10 sm:mt-12">
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isLoading}
+                  className={`
+                    bg-black text-white hover:bg-gray-800 hover:scale-105 transition-all duration-200 
+                    w-full max-w-sm py-4 sm:py-6 text-base sm:text-lg rounded-full
+                    ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                >
+                  {isLoading ? (
+                    <div className="flex items-center justify-center">
+                      <LoaderIcon className="animate-spin mr-2" />
+                      Démarrer le parcours
+                    </div>
+                  ) : (
+                    'Démarrer le parcours'
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
-        </div>
-      </TooltipProvider>
+        </TooltipProvider>
+      )}
     </>
   );
 }

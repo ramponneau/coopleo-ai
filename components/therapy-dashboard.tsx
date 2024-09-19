@@ -13,6 +13,7 @@ import { Loader2 } from 'lucide-react'
 import { EmailPrompt } from '@/components/ui/email-prompt'
 import { EmailTemplate } from '@/components/ui/email-template';
 import { SplashScreen } from './splash-screen';
+import { useMediaQuery } from '@/hooks/use-media-query'
 
 function ChevronRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -60,6 +61,7 @@ export function TherapyDashboard() {
   const [showFinalOptions, setShowFinalOptions] = useState(false);
   const [finalRecommendations, setFinalRecommendations] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
+  const isMobile = useMediaQuery('(max-width: 640px)')
 
   const handleSendMessage = useCallback(async (message: string, isInvisiblePrompt: boolean = false) => {
     if (isTyping || (isFinalRecommendationShown && !isInvisiblePrompt)) return;
@@ -273,10 +275,13 @@ export function TherapyDashboard() {
         } catch (error) {
           console.error('Error parsing context:', error);
           setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
+        } finally {
+          setIsLoading(false);
         }
       } else {
         console.log('Missing context');
         setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
+        setIsLoading(false);
       }
     };
 
@@ -441,7 +446,7 @@ export function TherapyDashboard() {
               </div>
             </ScrollArea>
           </div>
-          <div className="p-2 sm:p-4 bg-white fixed bottom-0 left-0 right-0">
+          <div className={`p-2 sm:p-4 bg-white fixed left-0 right-0 ${isMobile ? 'bottom-0' : ''}`}>
             <form onSubmit={(e) => {
               e.preventDefault()
               if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)
@@ -451,20 +456,24 @@ export function TherapyDashboard() {
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder="Tapez votre message ici..."
-                className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
+                className={`min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm ${isMobile ? 'text-base' : ''}`}
                 disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
-                style={{ maxHeight: '120px', overflowY: 'auto' }}
+                style={{ 
+                  maxHeight: isMobile ? '80px' : '120px', 
+                  overflowY: 'auto',
+                  paddingRight: isMobile ? '40px' : '48px' // Make room for the send button
+                }}
               />
               <Button 
                 type="submit" 
-                size="icon" 
-                className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                size={isMobile ? "sm" : "icon"}
+                className={`absolute ${isMobile ? 'right-2 bottom-2 h-8 w-8' : 'right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8'} rounded-full`}
                 disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
               >
                 {isTyping ? (
-                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                  <Loader2 className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'} animate-spin`} />
                 ) : (
-                  <ArrowUpIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                  <ArrowUpIcon className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
                 )}
                 <span className="sr-only">Send</span>
               </Button>

@@ -8,12 +8,12 @@ export function SplashScreen() {
 
   useEffect(() => {
     const scaleInterval = setInterval(() => {
-      setScale((prevScale) => (prevScale === 1 ? 1.1 : 1))
-    }, 1000)
+      setScale((prevScale) => (prevScale === 1 ? 1.2 : 1))
+    }, 500) // Faster scale animation (every 500ms)
 
     const rotateInterval = setInterval(() => {
       setRotate((prevRotate) => (prevRotate + 180) % 360)
-    }, 2000)
+    }, 1000) // Faster rotation (every 1000ms)
 
     return () => {
       clearInterval(scaleInterval)
@@ -24,9 +24,10 @@ export function SplashScreen() {
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-white">
       <div 
-        className="relative transition-all duration-1000 ease-in-out"
+        className="relative transition-all duration-500 ease-in-out"
         style={{ 
           transform: `scale(${scale}) rotate(${rotate}deg)`,
+          transition: 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)' // Bouncy effect
         }}
       >
         <svg

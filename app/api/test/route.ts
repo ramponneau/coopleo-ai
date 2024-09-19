@@ -7,8 +7,9 @@ export async function GET(req: NextRequest) {
   if (test === 'send-transcript') {
     const testData = {
       email: 'test@example.com',
-      conversationId: 'test-conversation-id',
-      finalRecommendations: '• Recommendation 1\n• Recommendation 2\n• Recommendation 3'
+      emailContent: '<h1>Test Email Content</h1><p>This is a test email.</p>',
+      finalRecommendations: '• Recommendation 1\n• Recommendation 2\n• Recommendation 3',
+      conversationId: 'test-conversation-id'
     };
 
     try {
