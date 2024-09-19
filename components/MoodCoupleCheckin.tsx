@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
-import { LoadingScreen } from './LoadingScreen'; // Make sure this path is correct
+import { SplashScreen } from './splash-screen';
 
 interface Item {
   icon: string;
@@ -110,7 +110,7 @@ export function MoodCoupleCheckin() {
 
   return (
     <>
-      {isLoading && <LoadingScreen />}
+      {isLoading && <SplashScreen />}
       <TooltipProvider>
         <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black px-8 sm:px-12 md:px-16 py-16 sm:py-20" style={{ fontFamily: 'Arial, sans-serif' }}>
           <div className="w-full max-w-xl">

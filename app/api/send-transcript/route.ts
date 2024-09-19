@@ -1,20 +1,24 @@
 import { Resend } from 'resend';
 
-console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY);
+console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set' : 'Not set');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
+    console.log('Received request to /api/send-transcript');
     const { email, emailContent, finalRecommendations, conversationId } = await req.json();
 
     console.log('Attempting to send email to:', email);
     console.log('Final Recommendations:', finalRecommendations);
-    console.log('Email Content:', emailContent);
+    console.log('Conversation ID:', conversationId);
 
-    if (!emailContent) {
-      throw new Error('Email content is missing');
+    if (!email || !emailContent) {
+      console.error('Missing required fields');
+      return new Response(JSON.stringify({ error: 'Missing required fields' }), { status: 400 });
     }
+
+    console.log('Email Content (first 100 characters):', emailContent.substring(0, 100));
 
     // Send email using Resend
     const { data, error } = await resend.emails.send({

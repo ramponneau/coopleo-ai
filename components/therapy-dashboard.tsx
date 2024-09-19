@@ -12,6 +12,7 @@ import ReactMarkdown from 'react-markdown'
 import { Loader2 } from 'lucide-react'
 import { EmailPrompt } from '@/components/ui/email-prompt'
 import { EmailTemplate } from '@/components/ui/email-template';
+import { SplashScreen } from './splash-screen';
 
 function ChevronRightIcon(props: React.SVGProps<SVGSVGElement>) {
   return (
@@ -58,6 +59,7 @@ export function TherapyDashboard() {
   const [isFinalRecommendationShown, setIsFinalRecommendationShown] = useState(false);
   const [showFinalOptions, setShowFinalOptions] = useState(false);
   const [finalRecommendations, setFinalRecommendations] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
 
   const handleSendMessage = useCallback(async (message: string, isInvisiblePrompt: boolean = false) => {
     if (isTyping || (isFinalRecommendationShown && !isInvisiblePrompt)) return;
@@ -283,7 +285,7 @@ export function TherapyDashboard() {
 
   const handleEmailPromptClose = useCallback(() => {
     setShowEmailPrompt(false);
-    setMessages(prev => [...prev, { role: 'assistant', content: "Je comprends. Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
     setIsFinalRecommendationShown(true);
   }, []);
 
@@ -299,174 +301,188 @@ export function TherapyDashboard() {
     return () => window.removeEventListener('resize', adjustViewportHeight);
   }, []);
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2000); // Adjust this time as needed
+
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen bg-white" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
-      <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white">
-        <button onClick={() => window.location.href = '/'} className="flex items-center">
-          <Image 
-            src="/coopleo-logo.svg" 
-            alt="Coopleo Logo" 
-            width={120} 
-            height={30} 
-            className="h-8 sm:h-10 w-auto transition-transform duration-200 ease-in-out transform hover:scale-105"
-            priority
-          />
-        </button>
-        <div className="flex items-center">
-          {/* Test button for email prompt */}
-          <Button 
-            onClick={() => setShowEmailPrompt(true)} 
-            size="icon" 
-            variant="ghost"
-            className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors mr-2"
-          >
-            <Mail className="w-5 h-5 text-gray-600" />
-            <span className="sr-only">Test Email Prompt</span>
-          </Button>
-          <Button 
-            onClick={handleDeleteHistory} 
-            size="icon" 
-            variant="ghost"
-            className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
-          >
-            <ReloadIcon className="w-5 h-5 text-gray-600" />
-            <span className="sr-only">Start New Conversation</span>
-          </Button>
-        </div>
-      </header>
-      <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full px-2 sm:px-4 py-4 pb-20">
-          <div className="space-y-4 max-w-full">
-            {messages.map((msg, index) => (
-              <div key={index} className="space-y-2 max-w-full">
-                <div className={cn(
-                  "flex items-start gap-2",
-                  msg.role === 'user' ? "justify-end" : "justify-start"
-                )}>
-                  {msg.role === 'assistant' && (
-                    <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden bg-white flex-shrink-0 border border-gray-200 rounded-full">
+    <>
+      {isLoading ? (
+        <SplashScreen />
+      ) : (
+        <div className="flex flex-col h-screen bg-white" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
+          <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white">
+            <button onClick={() => window.location.href = '/'} className="flex items-center">
+              <Image 
+                src="/coopleo-logo.svg" 
+                alt="Coopleo Logo" 
+                width={120} 
+                height={30} 
+                className="h-8 sm:h-10 w-auto transition-transform duration-200 ease-in-out transform hover:scale-105"
+                priority
+              />
+            </button>
+            <div className="flex items-center">
+              {/* Test button for email prompt */}
+              <Button 
+                onClick={() => setShowEmailPrompt(true)} 
+                size="icon" 
+                variant="ghost"
+                className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors mr-2"
+              >
+                <Mail className="w-5 h-5 text-gray-600" />
+                <span className="sr-only">Test Email Prompt</span>
+              </Button>
+              <Button 
+                onClick={handleDeleteHistory} 
+                size="icon" 
+                variant="ghost"
+                className="w-8 h-8 rounded-full hover:bg-gray-100 transition-colors"
+              >
+                <ReloadIcon className="w-5 h-5 text-gray-600" />
+                <span className="sr-only">Start New Conversation</span>
+              </Button>
+            </div>
+          </header>
+          <div className="flex-1 overflow-hidden">
+            <ScrollArea className="h-full px-2 sm:px-4 py-4 pb-20">
+              <div className="space-y-4 max-w-full">
+                {messages.map((msg, index) => (
+                  <div key={index} className="space-y-2 max-w-full">
+                    <div className={cn(
+                      "flex items-start gap-2",
+                      msg.role === 'user' ? "justify-end" : "justify-start"
+                    )}>
+                      {msg.role === 'assistant' && (
+                        <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden bg-white flex-shrink-0 border border-gray-200 rounded-full">
+                          <AvatarImage src="/ai-avatar.svg" alt="Coopleo" className="p-1" />
+                          <AvatarFallback>AI</AvatarFallback>
+                        </Avatar>
+                      )}
+                      <div className={cn(
+                        "rounded-lg p-2 sm:p-3 text-sm shadow-sm",
+                        msg.role === 'user' ? "bg-black text-white" : "bg-gray-100 text-black",
+                        "max-w-[75%] sm:max-w-[80%] break-words"
+                      )}>
+                        <ReactMarkdown 
+                          className="whitespace-pre-wrap leading-tight text-xs sm:text-sm"
+                          components={{
+                            strong: ({node, ...props}) => <span className="font-bold" {...props} />,
+                            li: ({node, ...props}) => <li className="ml-4" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
+                            ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
+                            p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />
+                          }}
+                        >
+                          {formatMessage(msg.content, msg.role === 'assistant')}
+                        </ReactMarkdown>
+                      </div>
+                      {msg.role === 'user' && (
+                        <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden flex-shrink-0 border border-gray-200 rounded-full">
+                          <AvatarImage src="/placeholder-user.jpg" alt="User" className="object-cover" />
+                          <AvatarFallback>U</AvatarFallback>
+                        </Avatar>
+                      )}
+                    </div>
+                    {msg.role === 'assistant' && index === messages.length - 1 && !isFinalRecommendationShown && (
+                      <>
+                        {showFinalOptions && !msg.content.toLowerCase().includes('au revoir') ? (
+                          <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
+                            {[
+                              { text: "Oui, veuillez envoyer ces recommandations par mail", value: "Oui" },
+                              { text: "Non, merci", value: "Non" }
+                            ].map((option, index) => (
+                              <button
+                                key={index}
+                                onClick={() => handleFinalOptionResponse(option.value)}
+                                className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
+                              >
+                                <span className="flex-grow mr-2">{option.text}</span>
+                                <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          suggestions.length > 0 && !msg.content.toLowerCase().includes('au revoir') && (
+                            <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
+                              {suggestions.map((suggestion, sugIndex) => (
+                                <button
+                                  key={sugIndex}
+                                  onClick={() => handleUserResponse(suggestion)}
+                                  className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
+                                >
+                                  <span className="flex-grow mr-2">{suggestion}</span>
+                                  <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
+                                </button>
+                              ))}
+                            </div>
+                          )
+                        )}
+                      </>
+                    )}
+                  </div>
+                ))}
+                {isTyping && (
+                  <div className="flex items-start gap-2">
+                    <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden bg-white">
                       <AvatarImage src="/ai-avatar.svg" alt="Coopleo" className="p-1" />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
-                  )}
-                  <div className={cn(
-                    "rounded-lg p-2 sm:p-3 text-sm shadow-sm",
-                    msg.role === 'user' ? "bg-black text-white" : "bg-gray-100 text-black",
-                    "max-w-[75%] sm:max-w-[80%] break-words"
-                  )}>
-                    <ReactMarkdown 
-                      className="whitespace-pre-wrap leading-tight text-xs sm:text-sm"
-                      components={{
-                        strong: ({node, ...props}) => <span className="font-bold" {...props} />,
-                        li: ({node, ...props}) => <li className="ml-4" {...props} />,
-                        ul: ({node, ...props}) => <ul className="list-disc pl-0" {...props} />,
-                        ol: ({node, ...props}) => <ol className="list-decimal pl-0" {...props} />,
-                        p: ({node, ...props}) => <p className="mb-2 last:mb-0" {...props} />
-                      }}
-                    >
-                      {formatMessage(msg.content, msg.role === 'assistant')}
-                    </ReactMarkdown>
+                    <div className="bg-muted rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-muted-foreground shadow-sm mr-12">
+                      Analyse en cours...
+                    </div>
                   </div>
-                  {msg.role === 'user' && (
-                    <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden flex-shrink-0 border border-gray-200 rounded-full">
-                      <AvatarImage src="/placeholder-user.jpg" alt="User" className="object-cover" />
-                      <AvatarFallback>U</AvatarFallback>
-                    </Avatar>
-                  )}
-                </div>
-                {msg.role === 'assistant' && index === messages.length - 1 && !isFinalRecommendationShown && (
-                  <>
-                    {showFinalOptions && !msg.content.toLowerCase().includes('au revoir') ? (
-                      <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
-                        {[
-                          { text: "Oui, veuillez envoyer ces recommandations par mail", value: "Oui" },
-                          { text: "Non, merci", value: "Non" }
-                        ].map((option, index) => (
-                          <button
-                            key={index}
-                            onClick={() => handleFinalOptionResponse(option.value)}
-                            className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
-                          >
-                            <span className="flex-grow mr-2">{option.text}</span>
-                            <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
-                          </button>
-                        ))}
-                      </div>
-                    ) : (
-                      suggestions.length > 0 && !msg.content.toLowerCase().includes('au revoir') && (
-                        <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
-                          {suggestions.map((suggestion, sugIndex) => (
-                            <button
-                              key={sugIndex}
-                              onClick={() => handleUserResponse(suggestion)}
-                              className="flex items-center justify-between text-left text-xs sm:text-sm bg-gray-100 text-black font-semibold py-2 px-3 rounded-lg transition-colors duration-200 hover:bg-gray-200 active:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300 w-full"
-                            >
-                              <span className="flex-grow mr-2">{suggestion}</span>
-                              <ChevronRightIcon className="h-4 w-4 flex-shrink-0" />
-                            </button>
-                          ))}
-                        </div>
-                      )
-                    )}
-                  </>
                 )}
+                <div ref={messagesEndRef} />
               </div>
-            ))}
-            {isTyping && (
-              <div className="flex items-start gap-2">
-                <Avatar className="w-6 h-6 sm:w-8 sm:h-8 overflow-hidden bg-white">
-                  <AvatarImage src="/ai-avatar.svg" alt="Coopleo" className="p-1" />
-                  <AvatarFallback>AI</AvatarFallback>
-                </Avatar>
-                <div className="bg-muted rounded-lg p-2 sm:p-3 text-xs sm:text-sm text-muted-foreground shadow-sm mr-12">
-                  Analyse en cours...
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+            </ScrollArea>
           </div>
-        </ScrollArea>
-      </div>
-      <div className="p-2 sm:p-4 bg-white fixed bottom-0 left-0 right-0">
-        <form onSubmit={(e) => {
-          e.preventDefault()
-          if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)
-        }} className="relative">
-          <Textarea
-            value={inputMessage}
-            onChange={handleInputChange}
-            onKeyPress={handleKeyPress}
-            placeholder="Tapez votre message ici..."
-            className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
-            disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
-            style={{ maxHeight: '120px', overflowY: 'auto' }}
-          />
-          <Button 
-            type="submit" 
-            size="icon" 
-            className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full"
-            disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
-          >
-            {isTyping ? (
-              <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-            ) : (
-              <ArrowUpIcon className="h-3 w-3 sm:h-4 sm:w-4" />
-            )}
-            <span className="sr-only">Send</span>
-          </Button>
-        </form>
-      </div>
-      
-      {showEmailPrompt && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <EmailPrompt 
-            conversationId={conversationId} 
-            onClose={handleEmailPromptClose}
-            finalRecommendations={finalRecommendations}
-          />
+          <div className="p-2 sm:p-4 bg-white fixed bottom-0 left-0 right-0">
+            <form onSubmit={(e) => {
+              e.preventDefault()
+              if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)
+            }} className="relative">
+              <Textarea
+                value={inputMessage}
+                onChange={handleInputChange}
+                onKeyPress={handleKeyPress}
+                placeholder="Tapez votre message ici..."
+                className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
+                disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
+                style={{ maxHeight: '120px', overflowY: 'auto' }}
+              />
+              <Button 
+                type="submit" 
+                size="icon" 
+                className="absolute right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8 rounded-full"
+                disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
+              >
+                {isTyping ? (
+                  <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                ) : (
+                  <ArrowUpIcon className="h-3 w-3 sm:h-4 sm:w-4" />
+                )}
+                <span className="sr-only">Send</span>
+              </Button>
+            </form>
+          </div>
+          
+          {showEmailPrompt && (
+            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+              <EmailPrompt 
+                conversationId={conversationId} 
+                onClose={handleEmailPromptClose}
+                finalRecommendations={finalRecommendations}
+              />
+            </div>
+          )}
         </div>
       )}
-    </div>
+    </>
   )
 }
 
