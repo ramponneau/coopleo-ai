@@ -11,9 +11,10 @@ import { EmailTemplate } from './email-template'
 interface EmailPromptProps {
   conversationId: string | null;
   onClose: () => void;
+  finalRecommendations: string;
 }
 
-export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
+export function EmailPrompt({ conversationId, onClose, finalRecommendations }: EmailPromptProps) {
   const [email, setEmail] = useState('')
   const [isValid, setIsValid] = useState(true)
   const [isSending, setIsSending] = useState(false)
@@ -46,7 +47,11 @@ export function EmailPrompt({ conversationId, onClose }: EmailPromptProps) {
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, conversationId }),
+          body: JSON.stringify({ 
+            email, 
+            conversationId, 
+            finalRecommendations
+          }),
         });
 
         const data = await response.json();

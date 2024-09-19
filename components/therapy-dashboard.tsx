@@ -57,6 +57,7 @@ export function TherapyDashboard() {
   const [showFinalRecommendationButtons, setShowFinalRecommendationButtons] = useState(false);
   const [isFinalRecommendationShown, setIsFinalRecommendationShown] = useState(false);
   const [showFinalOptions, setShowFinalOptions] = useState(false);
+  const [finalRecommendations, setFinalRecommendations] = useState<string>('');
 
   const handleSendMessage = useCallback(async (message: string, isInvisiblePrompt: boolean = false) => {
     if (isTyping || (isFinalRecommendationShown && !isInvisiblePrompt)) return;
@@ -99,6 +100,7 @@ export function TherapyDashboard() {
       if (data.contains_recommendations) {
         setSuggestions(["Oui, veuillez envoyer ces recommandations par mail", "Non, merci"]);
         setShowFinalOptions(true);
+        setFinalRecommendations(data.response); // Store the final recommendations
       } else if (!isInvisiblePrompt) {
         setSuggestions(data.suggestions);
       }
@@ -113,7 +115,7 @@ export function TherapyDashboard() {
     } finally {
       setIsTyping(false);
     }
-  }, [isTyping, isFinalRecommendationShown, conversationId, context]);
+  }, [isTyping, isFinalRecommendationShown, conversationId, context, setFinalRecommendations]);
 
   const handleFinalOptionResponse = useCallback((response: string) => {
     if (response.toLowerCase() === 'oui') {
@@ -285,8 +287,20 @@ export function TherapyDashboard() {
     setIsFinalRecommendationShown(true);
   }, []);
 
+  useEffect(() => {
+    const adjustViewportHeight = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    adjustViewportHeight();
+    window.addEventListener('resize', adjustViewportHeight);
+
+    return () => window.removeEventListener('resize', adjustViewportHeight);
+  }, []);
+
   return (
-    <div className="flex flex-col h-screen bg-white">
+    <div className="flex flex-col h-screen bg-white" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
       <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white">
         <button onClick={() => window.location.href = '/'} className="flex items-center">
           <Image 
@@ -295,6 +309,7 @@ export function TherapyDashboard() {
             width={120} 
             height={30} 
             className="h-8 sm:h-10 w-auto transition-transform duration-200 ease-in-out transform hover:scale-105"
+            priority
           />
         </button>
         <div className="flex items-center">
@@ -320,7 +335,7 @@ export function TherapyDashboard() {
         </div>
       </header>
       <div className="flex-1 overflow-hidden">
-        <ScrollArea className="h-full px-2 sm:px-4 py-4">
+        <ScrollArea className="h-full px-2 sm:px-4 py-4 pb-20">
           <div className="space-y-4 max-w-full">
             {messages.map((msg, index) => (
               <div key={index} className="space-y-2 max-w-full">
@@ -412,7 +427,7 @@ export function TherapyDashboard() {
           </div>
         </ScrollArea>
       </div>
-      <div className="p-2 sm:p-4 bg-white">
+      <div className="p-2 sm:p-4 bg-white fixed bottom-0 left-0 right-0">
         <form onSubmit={(e) => {
           e.preventDefault()
           if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)
@@ -424,6 +439,7 @@ export function TherapyDashboard() {
             placeholder="Tapez votre message ici..."
             className="min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm"
             disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
+            style={{ maxHeight: '120px', overflowY: 'auto' }}
           />
           <Button 
             type="submit" 
@@ -446,6 +462,7 @@ export function TherapyDashboard() {
           <EmailPrompt 
             conversationId={conversationId} 
             onClose={handleEmailPromptClose}
+            finalRecommendations={finalRecommendations}
           />
         </div>
       )}

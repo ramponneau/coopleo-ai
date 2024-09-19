@@ -268,12 +268,20 @@ def register_routes(app):
                     if not suggestions:
                         suggestions = ["J'aimerais mettre cela en pratique", "Cela me dérangerait personnellement", "C'est un sacré défi pour notre couple"]
 
+                def extract_recommendations(response: str) -> str:
+                    recommendations = re.findall(r'•\s*(.*?)(?:\n|$)', response)
+                    return '\n'.join(f'• {rec}' for rec in recommendations)
+
+                # In your chat route
+                final_recommendations = extract_recommendations(response) if contains_recommendations else ""
+
                 return jsonify({
                     'response': response,
                     'suggestions': suggestions,
                     'conversation_id': conversation_id,
                     'contains_recommendations': contains_recommendations,
-                    'asks_for_email': asks_for_email
+                    'asks_for_email': asks_for_email,
+                    'final_recommendations': final_recommendations  # Add this line
                 })
 
             except Exception as e:
