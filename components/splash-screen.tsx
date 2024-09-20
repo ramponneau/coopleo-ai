@@ -5,29 +5,36 @@ import { useEffect, useState } from 'react'
 export function SplashScreen() {
   const [scale, setScale] = useState(1)
   const [rotate, setRotate] = useState(0)
+  const [dots, setDots] = useState('')
 
   useEffect(() => {
     const scaleInterval = setInterval(() => {
       setScale((prevScale) => (prevScale === 1 ? 1.2 : 1))
-    }, 500) // Faster scale animation (every 500ms)
+    }, 500)
 
     const rotateInterval = setInterval(() => {
       setRotate((prevRotate) => (prevRotate + 180) % 360)
-    }, 1000) // Faster rotation (every 1000ms)
+    }, 1000)
+
+    const dotsInterval = setInterval(() => {
+      setDots((prevDots) => (prevDots.length >= 3 ? '' : prevDots + '.'))
+    }, 500)
 
     return () => {
       clearInterval(scaleInterval)
       clearInterval(rotateInterval)
+      clearInterval(dotsInterval)
     }
   }, [])
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-white">
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
+      <h1 className="text-3xl font-bold text-gray-800 mb-8">Coopleo</h1>
       <div 
         className="relative transition-all duration-500 ease-in-out"
         style={{ 
           transform: `scale(${scale}) rotate(${rotate}deg)`,
-          transition: 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)' // Bouncy effect
+          transition: 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
         }}
       >
         <svg
@@ -48,7 +55,9 @@ export function SplashScreen() {
           />
         </svg>
       </div>
-      <h1 className="mt-8 text-3xl font-bold text-gray-800">Coopleo</h1>
+      <p className="mt-8 text-xl font-semibold text-gray-600">
+        Chargement{dots}
+      </p>
       <p className="sr-only">Loading Coopleo application</p>
     </div>
   )

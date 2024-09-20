@@ -1,31 +1,32 @@
 {
-    "version": 2,
-    "builds": [
-      {
-        "src": "api/index.py",
-        "use": "@vercel/python",
-        "config": { 
-          "runtime": "python3.9",
-          "pythonRequirements": "requirements.txt",
-          "excludeFiles": "{.next,*.cache,node_modules/**,**/*.test.js,**/*.spec.js}"
-        }
-      },
-      {
-        "src": "package.json",
-        "use": "@vercel/next"
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.py",
+      "use": "@vercel/python",
+      "config": {
+        "runtime": "python3.9",
+        "pythonRequirements": "requirements.txt",
+        "excludeFiles": "{.next,*.cache,node_modules/**,**/*.test.js,**/*.spec.js}"
       }
-    ],
-    "routes": [
-      {
-        "src": "/api/(.*)",
-        "dest": "api/index.py"
-      },
-      {
-        "src": "/(.*)",
-        "dest": "/$1"
-      }
-    ],
-    "env": {
-      "PYTHONPATH": ".:python_api/"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/next"
     }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/$1"
+    }
+  ],
+  "env": {
+    "PYTHONPATH": ".:python_api/"
+  },
+  "regions": ["cdg1"]
 }

@@ -1,6 +1,7 @@
 flask
 werkzeug
 langchain
+langchain_core
 langchain-community
 langchain-anthropic
 anthropic
