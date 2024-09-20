@@ -290,7 +290,7 @@ export function TherapyDashboard() {
 
   const handleEmailPromptClose = useCallback(() => {
     setShowEmailPrompt(false);
-    setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. **N'hésitez pas à revenir si vous avez d'autres questions à l'avenir**. Au revoir et prenez soin de vous !" }]);
     setIsFinalRecommendationShown(true);
   }, []);
 
@@ -446,7 +446,7 @@ export function TherapyDashboard() {
               </div>
             </ScrollArea>
           </div>
-          <div className={`p-2 sm:p-4 bg-white fixed left-0 right-0 ${isMobile ? 'bottom-0' : ''}`}>
+          <div className={`p-2 sm:p-4 bg-white ${isMobile ? 'fixed left-0 right-0 bottom-0' : 'sticky bottom-0'}`}>
             <form onSubmit={(e) => {
               e.preventDefault()
               if (inputMessage.trim() && !isFinalRecommendationShown) handleSendMessage(inputMessage)

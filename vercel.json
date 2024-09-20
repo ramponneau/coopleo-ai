@@ -12,7 +12,10 @@
     },
     {
       "src": "package.json",
-      "use": "@vercel/next"
+      "use": "@vercel/next",
+      "config": {
+        "installCommand": "rm -rf .next/cache && bun install"
+      }
     }
   ],
   "routes": [
