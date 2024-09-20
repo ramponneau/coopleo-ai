@@ -166,7 +166,7 @@ export function TherapyDashboard() {
         const initialContext = { state, mood, location, topic }
         await handleSendMessage(JSON.stringify(initialContext), true)
       } else {
-        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }])
+        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis **Coopleo**, votre conseiller relationnel. Quel est votre nom ?" }])
       }
     } catch (error) {
       console.error('Error resetting conversation:', error)
@@ -456,24 +456,29 @@ export function TherapyDashboard() {
                 onChange={handleInputChange}
                 onKeyPress={handleKeyPress}
                 placeholder="Tapez votre message ici..."
-                className={`min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-10 sm:pr-12 border border-neutral-400 shadow-sm text-sm ${isMobile ? 'text-base' : ''}`}
+                className={cn(
+                  "min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-16 border border-neutral-400 shadow-sm text-sm",
+                  isMobile && "text-base"
+                )}
                 disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
                 style={{ 
                   maxHeight: isMobile ? '80px' : '120px', 
                   overflowY: 'auto',
-                  paddingRight: isMobile ? '40px' : '48px' // Make room for the send button
                 }}
               />
               <Button 
                 type="submit" 
-                size={isMobile ? "sm" : "icon"}
-                className={`absolute ${isMobile ? 'right-2 bottom-2 h-8 w-8' : 'right-1 sm:right-2 bottom-1 sm:bottom-2 h-7 w-7 sm:h-8 sm:w-8'} rounded-full`}
+                variant="default"
+                className={cn(
+                  "absolute p-0 flex items-center justify-center bg-black hover:bg-gray-800 rounded-full",
+                  "right-2 top-1/2 transform -translate-y-1/2 h-12 w-12"
+                )}
                 disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
               >
                 {isTyping ? (
-                  <Loader2 className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'} animate-spin`} />
+                  <Loader2 className="animate-spin text-white h-6 w-6" />
                 ) : (
-                  <ArrowUpIcon className={`${isMobile ? 'h-4 w-4' : 'h-3 w-3 sm:h-4 sm:w-4'}`} />
+                  <ArrowUpIcon className="text-white h-6 w-6" />
                 )}
                 <span className="sr-only">Send</span>
               </Button>
