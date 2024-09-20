@@ -1,6 +1,9 @@
-     .next
-     node_modules
-     *.test.js
-     *.spec.js
-     public
-     app
+.next
+node_modules
+*.test.js
+*.spec.js
+logs
+coverage
+dist
+docs
+tmp

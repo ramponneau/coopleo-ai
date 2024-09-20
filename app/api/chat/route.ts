@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+
 let conversationId: string | null = null;
 
 export async function POST(req: NextRequest) {
@@ -16,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Sending payload to Flask server:', payload);
 
-    const response = await fetch('http://localhost:5000/chat', {
+    const response = await fetch(`${API_URL}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,7 +59,7 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const response = await fetch('http://localhost:5000/reset', { 
+    const response = await fetch(`${API_URL}/reset`, { 
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

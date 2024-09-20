@@ -42,7 +42,6 @@ except Exception as e:
     print(f"Failed to initialize ChatAnthropic: {str(e)}")
     llm = None
 
-
 # Define conversation template
 template = """
 Your name is **Coopleo** (in bold). 
