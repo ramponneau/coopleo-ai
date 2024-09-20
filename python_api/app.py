@@ -159,6 +159,7 @@ def generate_suggestions(response: str, conversation_history: List[str]) -> List
     prompt = f"""
     Based on the following conversation history and the AI's last response, generate 3 short, natural, and relevant examples of what the user might say next.
     These should be concise and specific examples, without any introductory text or formatting instructions.
+    Start each example on a new line. 
     Do not use introductory text, numbering, or ellipsis.
 
     Conversation history:

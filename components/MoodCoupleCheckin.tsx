@@ -108,7 +108,11 @@ export function MoodCoupleCheckin() {
         <div className="flex flex-col items-center justify-center min-h-screen bg-white text-black px-8 sm:px-12 md:px-16 py-16 sm:py-20" style={{ fontFamily: 'Arial, sans-serif' }}>
           <div className="w-full max-w-xl">
             <div className="flex items-center justify-between mb-10 sm:mb-12">
-              <Image src="/coopleo-logo.svg" alt="Coopleo Logo" width={180} height={45} className="w-2/5 sm:w-1/3 h-auto" />
+              <img 
+                src="/coopleo-logo.svg" 
+                alt="Coopleo Logo" 
+                className="w-2/5 sm:w-1/3 h-auto"
+              />
               <Popover>
                 <PopoverTrigger asChild>
                   <Button variant="ghost" size="icon" className="h-8 w-8">

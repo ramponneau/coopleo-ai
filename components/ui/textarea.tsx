@@ -1,12 +1,13 @@
 import * as React from "react"
-
 import { cn } from "@/lib/utils"
 
 export interface TextareaProps
-  extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
+  extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'enterKeyHint'> {
+  enterKeyHint?: 'enter' | 'done' | 'go' | 'next' | 'previous' | 'search' | 'send';
+}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, ...props }, ref) => {
+  ({ className, enterKeyHint, ...props }, ref) => {
     return (
       <textarea
         className={cn(
@@ -15,10 +16,12 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
         )}
         ref={ref}
         {...props}
+        {...(enterKeyHint ? { enterKeyHint } : {})}
       />
     )
   }
-)
+) as React.ForwardRefExoticComponent<TextareaProps & React.RefAttributes<HTMLTextAreaElement>>
+
 Textarea.displayName = "Textarea"
 
 export { Textarea }

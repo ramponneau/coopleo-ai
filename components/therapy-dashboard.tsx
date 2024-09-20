@@ -173,7 +173,7 @@ export function TherapyDashboard() {
     }
   }
 
-  const handleKeyPress = (e: ReactKeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (inputMessage.trim()) handleSendMessage(inputMessage)
@@ -322,13 +322,10 @@ export function TherapyDashboard() {
         <div className="flex flex-col h-screen bg-white" style={{ height: 'calc(var(--vh, 1vh) * 100)' }}>
           <header className="sticky top-0 z-10 flex items-center justify-between h-16 px-4 border-b bg-white">
             <button onClick={() => window.location.href = '/'} className="flex items-center">
-              <Image 
+              <img 
                 src="/coopleo-logo.svg" 
                 alt="Coopleo Logo" 
-                width={120} 
-                height={30} 
                 className="h-8 sm:h-10 w-auto transition-transform duration-200 ease-in-out transform hover:scale-105"
-                priority
               />
             </button>
             <div className="flex items-center">
@@ -457,7 +454,7 @@ export function TherapyDashboard() {
                 onKeyPress={handleKeyPress}
                 placeholder="Tapez votre message ici..."
                 className={cn(
-                  "min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-16 border border-neutral-400 shadow-sm text-sm",
+                  "min-h-[40px] sm:min-h-[48px] w-full rounded-2xl resize-none py-2 sm:py-3 px-3 sm:px-4 pr-14 border border-neutral-400 shadow-sm text-sm",
                   isMobile && "text-base"
                 )}
                 disabled={isTyping || showEmailPrompt || isFinalRecommendationShown}
@@ -465,13 +462,14 @@ export function TherapyDashboard() {
                   maxHeight: isMobile ? '80px' : '120px', 
                   overflowY: 'auto',
                 }}
+                enterKeyHint="send"
               />
               <Button 
                 type="submit" 
                 variant="default"
                 className={cn(
                   "absolute p-0 flex items-center justify-center bg-black hover:bg-gray-800 rounded-full",
-                  "right-2 top-1/2 transform -translate-y-1/2 h-12 w-12"
+                  "right-2 bottom-2 h-12 w-12"
                 )}
                 disabled={isTyping || !inputMessage.trim() || showEmailPrompt || isFinalRecommendationShown}
               >
