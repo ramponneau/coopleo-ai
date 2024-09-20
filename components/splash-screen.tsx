@@ -28,10 +28,9 @@ export function SplashScreen() {
   }, [])
 
   return (
-    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50">
-      <h1 className="text-3xl font-bold text-gray-800 mb-8">Coopleo</h1>
+    <div className="fixed inset-0 flex flex-col items-center justify-center bg-white z-50" style={{ width: '100vw', height: '100vh' }}>
       <div 
-        className="relative transition-all duration-500 ease-in-out"
+        className="relative transition-all duration-500 ease-in-out mb-16"
         style={{ 
           transform: `scale(${scale}) rotate(${rotate}deg)`,
           transition: 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
@@ -55,10 +54,11 @@ export function SplashScreen() {
           />
         </svg>
       </div>
-      <p className="mt-8 text-xl font-semibold text-gray-600">
+      <p className="text-xl font-semibold text-gray-600">
         Chargement{dots}
       </p>
       <p className="sr-only">Loading Coopleo application</p>
+      <p className="absolute bottom-4 text-sm text-gray-400">v.0.1.0</p>
     </div>
   )
 }
