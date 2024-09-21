@@ -31,7 +31,7 @@ export function SplashScreen() {
     <div className="fixed inset-0 flex flex-col items-center justify-between bg-white z-50 p-4" style={{ width: '100vw', height: '100vh' }}>
       <div className="flex-grow flex flex-col items-center justify-center">
         <div 
-          className="relative transition-all duration-500 ease-in-out mb-16"
+          className="relative transition-all duration-500 ease-in-out mb-8 sm:mb-16"
           style={{ 
             transform: `scale(${scale}) rotate(${rotate}deg)`,
             transition: 'transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)'
@@ -60,7 +60,7 @@ export function SplashScreen() {
         </p>
         <p className="sr-only">Loading Coopleo application</p>
       </div>
-      <p className="text-sm text-gray-400 mt-4">v.0.1.0</p>
+      <p className="text-sm text-gray-400 mt-4 absolute bottom-4 left-1/2 transform -translate-x-1/2">v0.1.0</p>
     </div>
   )
 }

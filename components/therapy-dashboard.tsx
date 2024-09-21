@@ -102,7 +102,7 @@ export function TherapyDashboard() {
       setAsksForEmail(data.asks_for_email);
 
       if (data.contains_recommendations) {
-        setSuggestions(["Oui, veuillez envoyer ces recommandations par mail", "Non, merci"]);
+        setSuggestions(["Oui, envoyez-moi ces recommandations par mail", "Non, merci"]);
         setShowFinalOptions(true);
         setFinalRecommendations(data.response); // Store the final recommendations
       } else if (!isInvisiblePrompt) {
@@ -125,7 +125,7 @@ export function TherapyDashboard() {
     if (response.toLowerCase() === 'oui') {
       setShowEmailPrompt(true);
     } else {
-      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps et pour notre conversation. J'espère qu'elle vous a été utile. **N'hésitez pas à revenir si vous avez d'autres questions à l'avenir**. Au revoir et prenez soin de vous !" }]);
     }
     setShowFinalOptions(false);
     setIsFinalRecommendationShown(true);
@@ -242,11 +242,11 @@ export function TherapyDashboard() {
       }
 
       // Add a closing message without sending another request
-      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps. Les recommandations ont été envoyées à votre adresse e-mail. J'espère que notre conversation vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Merci pour votre temps. Les recommandations ont été envoyées à votre adresse mail. J'espère que notre conversation vous a été utile. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
       setIsFinalRecommendationShown(true);
     } catch (error) {
       console.error('Error sending email:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, il y a eu un problème lors de l'envoi de l'e-mail. Cependant, je vous remercie pour notre conversation. N'hésitez pas à revenir si vous avez d'autres questions à l'avenir. Au revoir et prenez soin de vous !" }]);
+      setMessages(prev => [...prev, { role: 'assistant', content: "Désolé, il y a eu un problème lors de l'envoi de l'e-mail. Cependant, je vous remercie pour notre conversation. **N'hésitez pas à revenir si vous avez d'autres questions à l'avenir**. Au revoir et prenez soin de vous !" }]);
       setIsFinalRecommendationShown(true);
     }
   };
@@ -274,13 +274,13 @@ export function TherapyDashboard() {
           await handleSendMessage(JSON.stringify(initialContext), true);
         } catch (error) {
           console.error('Error parsing context:', error);
-          setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
+          setMessages([{ role: 'assistant', content: "Bonjour ! Je suis **Coopleo**, votre conseiller relationnel. Quel est votre nom ?" }]);
         } finally {
           setIsLoading(false);
         }
       } else {
         console.log('Missing context');
-        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis Coopleo, votre conseiller relationnel. Quel est votre nom ?" }]);
+        setMessages([{ role: 'assistant', content: "Bonjour ! Je suis **Coopleo**, votre conseiller relationnel. Quel est votre nom ?" }]);
         setIsLoading(false);
       }
     };

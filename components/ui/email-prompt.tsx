@@ -88,7 +88,7 @@ export function EmailPrompt({ conversationId, onClose, finalRecommendations }: E
       <CardHeader className="space-y-2">
         <CardTitle className="text-xl sm:text-2xl font-bold">Recevoir mon parcours personnalisé</CardTitle>
         <CardDescription className="text-sm sm:text-base">
-          Suite à notre discussion proactive sur la gestion de votre couple, vous recevrez vos recommandations finales dans votre boîte mail.
+        Suite à notre échange personnalisé sur votre relation, vous recevrez par mail vos recommandations concrètes adaptées à votre situation de couple. Ces conseils vous aideront à mettre en place des actions positives pour renforcer votre couple.
         </CardDescription>
       </CardHeader>
       <form onSubmit={handleSubmit}>
