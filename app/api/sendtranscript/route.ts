@@ -1,10 +1,11 @@
 import { Resend } from 'resend';
+import { NextRequest, NextResponse } from 'next/server'
 
 console.log('RESEND_API_KEY:', process.env.RESEND_API_KEY ? 'Set' : 'Not set');
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     console.log('Received request to /api/sendtranscript');
     const { email, emailContent, finalRecommendations, conversationId } = await req.json();
