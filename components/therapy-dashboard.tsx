@@ -228,7 +228,7 @@ export function TherapyDashboard() {
 
       console.log('Email content:', emailContent);
 
-      const response = await fetch('/api/send-transcript', {
+      const response = await fetch('/api/sendtranscript', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -395,7 +395,7 @@ export function TherapyDashboard() {
                         {showFinalOptions && !msg.content.toLowerCase().includes('au revoir') ? (
                           <div className="flex flex-col gap-2 mt-2 ml-8 sm:ml-11 max-w-[75%] sm:max-w-[80%]">
                             {[
-                              { text: "Oui, veuillez envoyer ces recommandations par mail", value: "Oui" },
+                              { text: "Oui, envoyez-moi ces recommandations par mail", value: "Oui" },
                               { text: "Non, merci", value: "Non" }
                             ].map((option, index) => (
                               <button
