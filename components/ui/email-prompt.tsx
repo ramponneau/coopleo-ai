@@ -42,7 +42,7 @@ export function EmailPrompt({ conversationId, onClose, finalRecommendations }: E
     if (isValidEmail(email)) {
       setIsSending(true)
       try {
-        const response = await fetch('/api/send-transcript', {
+        const response = await fetch('/api/sendtranscript', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

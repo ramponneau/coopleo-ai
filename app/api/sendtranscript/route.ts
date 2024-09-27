@@ -6,7 +6,7 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
-    console.log('Received request to /api/send-transcript');
+    console.log('Received request to /api/sendtranscript');
     const { email, emailContent, finalRecommendations, conversationId } = await req.json();
 
     console.log('Attempting to send email to:', email);
@@ -36,7 +36,7 @@ export async function POST(req: Request) {
     console.log('Email sent successfully:', data);
     return new Response(JSON.stringify({ success: true, data }));
   } catch (error) {
-    console.error('Error in /api/send-transcript:', error);
+    console.error('Error in /api/sendtranscript:', error);
     return new Response(JSON.stringify({ error: 'An error occurred sending the recommendations', details: error }), { status: 500 });
   }
 }

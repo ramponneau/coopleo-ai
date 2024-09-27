@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
     };
 
     try {
-      const response = await fetch(`${req.nextUrl.origin}/api/send-transcript`, {
+      const response = await fetch(`${req.nextUrl.origin}/api/sendtranscript`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
